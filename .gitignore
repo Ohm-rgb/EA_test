@@ -1,0 +1,6 @@
+﻿logs/*.log
+__pycache__/
+*.ex4
+*.ex5
+.env
+.vscode/
