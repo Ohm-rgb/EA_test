@@ -95,3 +95,6 @@ description: Development principles and best practices for code quality, workflo
       - [Time]: [Short summary of activity]
     Notes: [Brief summary of changes, decisions, or issues]
     ```
+
+## 9. Communication
+- **Language**: Agent must always communicate in Thai.
