@@ -11,34 +11,34 @@
   --bg-primary: #0f172a;
   --bg-secondary: #1e293b;
   --bg-tertiary: #334155;
-  
+
   /* Glass Effect */
   --glass-bg: rgba(30, 41, 59, 0.6);
   --glass-border: rgba(255, 255, 255, 0.1);
   --glass-blur: 12px;
-  
+
   /* Semantic Colors */
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-critical: #ef4444;
   --color-info: #3b82f6;
-  
+
   /* Accent Colors */
   --color-gold: #fbbf24;
   --color-emerald: #10b981;
   --color-purple: #8b5cf6;
   --color-teal: #14b8a6;
-  
+
   /* Text Colors */
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
-  
+
   /* Gradients */
   --gradient-emerald: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
   --gradient-gold: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
   --gradient-purple: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-  
+
   /* Shadows */
   --shadow-glow-emerald: 0 0 20px rgba(16, 185, 129, 0.3);
   --shadow-glow-gold: 0 0 20px rgba(251, 191, 36, 0.3);
@@ -103,8 +103,15 @@ body {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
 }
 
 /* Buttons */
@@ -511,8 +518,15 @@ body {
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .fade-in {
@@ -520,10 +534,511 @@ body {
 }
 
 @keyframes slideIn {
-  from { opacity: 0; transform: translateX(-20px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .slide-in {
   animation: slideIn 0.3s ease forwards;
+}
+
+/* ========================================
+   New Dashboard - Apple Minimalist Style
+   ======================================== */
+
+/* Updated Root Variables for Apple Style */
+:root {
+  /* Apple-style Dark Colors */
+  --bg-primary: #0d0d0d;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #2a2a2a;
+
+  /* Subtle Blue Accent */
+  --accent-blue: #3b82f6;
+  --accent-blue-dim: rgba(59, 130, 246, 0.3);
+
+  /* Glass Effect - Refined */
+  --glass-bg: rgba(26, 26, 26, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: 16px;
+}
+
+/* Sidebar - Icon Navigation */
+.sidebar {
+  width: 60px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--glass-border);
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 0;
+  gap: 4px;
+  z-index: 100;
+}
+
+.sidebar-logo {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.logo-text {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.logo-text.gold {
+  color: #fbbf24;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-item {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.sidebar-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.sidebar-item.active {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-blue);
+}
+
+.sidebar-icon {
+  font-size: 18px;
+}
+
+/* Dashboard Container */
+.dashboard-container {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 1fr;
+  gap: 16px;
+  padding: 16px;
+  padding-left: 76px;
+  /* Sidebar offset */
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+.dashboard-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.column-header h2 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  letter-spacing: -0.01em;
+}
+
+/* Metrics Grid */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.metric-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metric-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.metric-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.metric-card.negative .metric-value {
+  color: var(--color-critical);
+}
+
+/* Trades Section */
+.trades-section,
+.orders-section {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 16px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.trades-table,
+.orders-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.trades-table th,
+.orders-table th {
+  text-align: left;
+  color: var(--text-muted);
+  font-weight: 500;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--glass-border);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.trades-table td,
+.orders-table td {
+  padding: 10px 4px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.text-blue {
+  color: var(--accent-blue);
+}
+
+.text-red {
+  color: var(--color-critical);
+}
+
+.text-green {
+  color: var(--color-success);
+}
+
+/* Chart Section */
+.chart-section {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.source-toggle {
+  display: flex;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.toggle-btn {
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toggle-btn.active {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.chart-placeholder {
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chart-svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Control Panel */
+.control-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.system-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+}
+
+.system-btn {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.system-btn.active {
+  background: var(--accent-blue);
+  color: white;
+}
+
+.system-label {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Stats Section */
+.stats-section,
+.performance-section {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.stats-title,
+.controls-title,
+.performance-title,
+.actions-title,
+.risk-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.stat-card {
+  background: var(--bg-tertiary);
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.stat-label {
+  font-size: 9px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.stat-value.highlight {
+  color: var(--accent-blue);
+}
+
+.stat-change {
+  font-size: 10px;
+  color: var(--color-success);
+}
+
+/* EA Controls */
+.ea-controls {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.auto-trading-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.toggle-switch {
+  width: 60px;
+  height: 32px;
+  background: var(--bg-tertiary);
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.toggle-switch.on {
+  background: var(--color-success);
+}
+
+.toggle-switch .toggle-label {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.toggle-switch.on .toggle-label {
+  left: 10px;
+  right: auto;
+  color: white;
+}
+
+/* Performance Grid */
+.performance-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.perf-item {
+  text-align: center;
+}
+
+.perf-label {
+  font-size: 9px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.perf-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Quick Actions */
+.quick-actions {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  padding: 8px 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* Risk Management */
+.risk-management {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.risk-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.risk-btn {
+  flex: 1;
+  padding: 10px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.risk-btn.active {
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
+  color: white;
+}
+
+/* Logs Section */
+.logs-section {
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 10px;
+  color: var(--text-muted);
+  max-height: 60px;
+  overflow-y: auto;
+}
+
+.log-line {
+  margin-bottom: 4px;
 }

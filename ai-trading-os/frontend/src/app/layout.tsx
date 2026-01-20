@@ -27,7 +27,7 @@ export default function RootLayout({
           <Sidebar />
 
           {/* Main Content */}
-          <main className="flex-1 ml-[80px]">
+          <main className="flex-1">
             {children}
           </main>
 

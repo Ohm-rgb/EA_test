@@ -12,7 +12,7 @@ interface ApiError {
 
 class ApiClient {
     private baseUrl: string;
-    private token: string | null = null;
+    private token: string | null = 'mock-token'; // DEV: Use mock token for development
 
     constructor(baseUrl: string = API_BASE_URL) {
         this.baseUrl = baseUrl;

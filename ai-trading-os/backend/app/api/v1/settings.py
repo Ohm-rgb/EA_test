@@ -100,7 +100,6 @@ async def get_ai_settings(
         raise HTTPException(status_code=404, detail="Settings not found")
     
     return {
-    return {
         "primary_ai_provider": settings.primary_ai_provider,
         "local_ai_model": settings.local_ai_model,
         "external_ai_provider": settings.external_ai_provider,

@@ -15,6 +15,45 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager"""
     # Startup
     Base.metadata.create_all(bind=engine)
+    
+    # Create default settings if not exists
+    from app.core.database import SessionLocal
+    from app.models.models import Settings, User
+    
+    db = SessionLocal()
+    try:
+        # Create default user if not exists
+        if not db.query(User).first():
+            default_user = User(
+                username="admin",
+                password_hash="$2b$12$dummyhashfordev"  # Placeholder
+            )
+            db.add(default_user)
+            db.commit()
+            db.refresh(default_user)
+            print("✅ Created default user")
+        
+        # Create default settings if not exists
+        if not db.query(Settings).first():
+            user = db.query(User).first()
+            default_settings = Settings(
+                user_id=user.id,
+                risk_profile="balanced",
+                max_drawdown_percent=10.0,
+                news_sensitivity="soft_filter",
+                primary_ai_provider="ollama",
+                local_ai_model="llama3.2:3b",
+                external_ai_provider="gemini",
+                external_ai_model="gemini-2.5-flash",
+                monthly_token_limit=100000,
+                mt5_account_type="demo"
+            )
+            db.add(default_settings)
+            db.commit()
+            print("✅ Created default settings")
+    finally:
+        db.close()
+    
     print("🚀 AI Trading OS Backend Started")
     yield
     # Shutdown

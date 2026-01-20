@@ -11,6 +11,7 @@ export default function Portfolio() {
         equityCurve,
         botPerformance,
         recentTrades,
+        exposure,
         loading,
         error
     } = usePortfolio();
@@ -241,7 +242,7 @@ export default function Portfolio() {
                     </div>
                     <div className="flex flex-wrap gap-2 mt-3">
                         {exposure.map((exp, i) => (
-                            <Badge key={i} variant={exp.direction === 'long' ? 'success' : 'destructive'}>
+                            <Badge key={i} variant={exp.direction === 'long' ? 'success' : 'danger'}>
                                 {exp.symbol} {exp.lots}
                             </Badge>
                         ))}
