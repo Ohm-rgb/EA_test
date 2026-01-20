@@ -120,6 +120,18 @@ class ApiClient {
     async getSystemHealth() {
         return this.request<SystemHealth>('/api/v1/health/');
     }
+
+    // AI Settings endpoints
+    async getAISettings() {
+        return this.request<AISettings>('/api/v1/settings/ai');
+    }
+
+    async updateAISettings(settings: Partial<AISettings>) {
+        return this.request('/api/v1/settings/ai', {
+            method: 'PUT',
+            body: JSON.stringify(settings),
+        });
+    }
 }
 
 // Types
@@ -219,12 +231,31 @@ export interface Settings {
     local_ai_model: string;
     external_ai_provider: string;
     external_ai_model: string;
-    gemini_api_key: string | null;
-    openai_api_key: string | null;
+    // Boolean flags - API keys are NEVER returned
+    has_gemini_key?: boolean;
+    has_openai_key?: boolean;
+    gemini_api_key?: string | null;  // For input only
+    openai_api_key?: string | null;  // For input only
     monthly_token_limit: number;
     // MT5
     mt5_server: string | null;
     mt5_account_type: string;
+}
+
+export interface AISettings {
+    primary_ai_provider: string;
+    local_ai_model: string;
+    external_ai_provider: string;
+    external_ai_model: string;
+    has_gemini_key: boolean;
+    has_openai_key: boolean;
+    has_ollama: boolean;
+    monthly_token_limit: number;
+    // Available models from backend
+    default_local_model: string;
+    available_local_models: string[];
+    default_gemini_model: string;
+    available_gemini_models: string[];
 }
 
 export interface SystemHealth {

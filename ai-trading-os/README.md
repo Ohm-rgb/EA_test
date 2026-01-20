@@ -57,10 +57,10 @@ npm run docker:up
 ## 📋 Development Roadmap
 
 - [x] Sprint 1: Core Infrastructure
-- [ ] Sprint 2: UI Foundation + Mockups
-- [ ] Sprint 3: Bot Design & Sandbox
-- [ ] Sprint 4: Portfolio & AI Integration
-- [ ] Sprint 5: Control Center & Security
+- [x] Sprint 2: UI Foundation + Mockups
+- [x] Sprint 3: Bot Design & Sandbox
+- [x] Sprint 4: Portfolio & AI Integration
+- [x] Sprint 5: Control Center & Security
 
 ## 📄 License
 

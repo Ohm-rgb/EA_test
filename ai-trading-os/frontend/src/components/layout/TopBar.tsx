@@ -25,8 +25,8 @@ export function StatusIndicator({ status, label }: StatusIndicatorProps) {
             <span className={`status-dot ${statusColors[status]}`} />
             <span className="text-sm text-[var(--text-secondary)]">{label}:</span>
             <span className={`text-sm font-medium ${status === 'connected' ? 'text-emerald-400' :
-                    status === 'warning' ? 'text-amber-400' :
-                        'text-red-400'
+                status === 'warning' ? 'text-amber-400' :
+                    'text-red-400'
                 }`}>
                 {statusLabels[status]}
             </span>
@@ -37,9 +37,28 @@ export function StatusIndicator({ status, label }: StatusIndicatorProps) {
 interface TopBarProps {
     title: string;
     showKillSwitch?: boolean;
+    onKillSwitch?: () => void;
 }
 
-export default function TopBar({ title, showKillSwitch = false }: TopBarProps) {
+export default function TopBar({ title, showKillSwitch = false, onKillSwitch }: TopBarProps) {
+    const handleKillSwitch = () => {
+        if (onKillSwitch) {
+            onKillSwitch();
+        } else {
+            // Default behavior if no callback provided
+            if (confirm('Emergency Stop: Are you sure you want to stop ALL bots?')) {
+                fetch('http://localhost:8000/api/v1/bots/emergency-stop', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || 'dev-token'}` }
+                }).then(() => {
+                    window.location.reload();
+                }).catch(err => {
+                    alert('Emergency stop failed: ' + err.message);
+                });
+            }
+        }
+    };
+
     return (
         <header className="flex items-center justify-between px-6 py-4 border-b border-[var(--glass-border)]">
             {/* Status Indicators */}
@@ -55,11 +74,15 @@ export default function TopBar({ title, showKillSwitch = false }: TopBarProps) {
             {/* Actions */}
             <div className="flex items-center gap-4">
                 {showKillSwitch && (
-                    <button className="kill-switch">
-                        Kill Switch
+                    <button
+                        className="kill-switch"
+                        onClick={handleKillSwitch}
+                    >
+                        🛑 Kill Switch
                     </button>
                 )}
             </div>
         </header>
     );
 }
+

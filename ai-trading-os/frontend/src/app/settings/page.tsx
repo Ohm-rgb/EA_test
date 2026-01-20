@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import { TopBar } from "@/components/layout";
 import { GlassCard, Button, Chip, Badge, ProgressBar } from "@/components/ui";
-import api, { Settings as SettingsType } from "@/lib/api";
+import api, { Settings as SettingsType, AISettings } from "@/lib/api";
 
 export default function Settings() {
     const [settings, setSettings] = useState<SettingsType | null>(null);
+    const [aiSettings, setAISettings] = useState<AISettings | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [advancedMode, setAdvancedMode] = useState(false);
@@ -20,8 +21,12 @@ export default function Settings() {
     const loadSettings = async () => {
         try {
             setLoading(true);
-            const data = await api.getSettings();
-            setSettings(data);
+            const [settingsData, aiData] = await Promise.all([
+                api.getSettings(),
+                api.getAISettings()
+            ]);
+            setSettings(settingsData);
+            setAISettings(aiData);
         } catch (err) {
             console.error(err);
             setMessage({ type: 'error', text: 'Failed to load settings' });
@@ -253,7 +258,11 @@ export default function Settings() {
                             </div>
                             <div className="flex items-center gap-2">
                                 {settings.primary_ai_provider === 'ollama' && <span className="text-xs text-emerald-400">Primary</span>}
-                                <Badge variant="success">Connected</Badge>
+                                {aiSettings?.has_ollama ? (
+                                    <Badge variant="success">Connected</Badge>
+                                ) : (
+                                    <Badge variant="danger">Disconnected</Badge>
+                                )}
                             </div>
                         </div>
 
@@ -273,20 +282,26 @@ export default function Settings() {
                                     value={settings.local_ai_model}
                                     onChange={(e) => handleUpdate({ local_ai_model: e.target.value })}
                                 >
-                                    <option value="llama3.2:3b">llama3.2:3b</option>
-                                    <option value="llama3.2:8b">llama3.2:8b</option>
-                                    <option value="mistral:7b">mistral:7b</option>
+                                    {aiSettings?.available_local_models?.map(model => (
+                                        <option key={model} value={model}>
+                                            {model}{model === aiSettings.default_local_model ? ' (Default)' : ''}
+                                        </option>
+                                    )) || (
+                                            <option value={settings.local_ai_model}>{settings.local_ai_model}</option>
+                                        )}
                                 </select>
                             </div>
 
                             <div className="p-3 rounded-lg bg-[var(--bg-tertiary)]">
                                 <div className="flex justify-between text-sm mb-1">
                                     <span className="text-[var(--text-secondary)]">Status</span>
-                                    <span className="text-emerald-400">● Running</span>
+                                    <span className={aiSettings?.has_ollama ? 'text-emerald-400' : 'text-red-400'}>
+                                        {aiSettings?.has_ollama ? '● Running' : '○ Not Running'}
+                                    </span>
                                 </div>
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-[var(--text-secondary)]">Latency</span>
-                                    <span>~120ms</span>
+                                    <span className="text-[var(--text-secondary)]">Available Models</span>
+                                    <span>{aiSettings?.available_local_models?.length || 0}</span>
                                 </div>
                             </div>
 
@@ -305,7 +320,7 @@ export default function Settings() {
                             </div>
                             <div className="flex items-center gap-2">
                                 {settings.primary_ai_provider === 'gemini' && <span className="text-xs text-emerald-400">Primary</span>}
-                                {settings.gemini_api_key ? (
+                                {aiSettings?.has_gemini_key ? (
                                     <Badge variant="info">Configured</Badge>
                                 ) : (
                                     <Badge variant="warning">Not Configured</Badge>
@@ -330,8 +345,7 @@ export default function Settings() {
                                 <label className="block text-sm text-[var(--text-secondary)] mb-2">API Key</label>
                                 <input
                                     type="password"
-                                    value={settings.gemini_api_key || ''}
-                                    placeholder="Enter Gemini API Key"
+                                    placeholder={aiSettings?.has_gemini_key ? '••••••••••••••••' : 'Enter Gemini API Key'}
                                     onChange={(e) => handleUpdate({ gemini_api_key: e.target.value })}
                                     className="input-field"
                                 />
@@ -344,9 +358,13 @@ export default function Settings() {
                                     value={settings.external_ai_model}
                                     onChange={(e) => handleUpdate({ external_ai_model: e.target.value })}
                                 >
-                                    <option value="gemini-3-flash">gemini-3-flash (Latest)</option>
-                                    <option value="gemini-2.5-flash">gemini-2.5-flash</option>
-                                    <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
+                                    {aiSettings?.available_gemini_models?.map(model => (
+                                        <option key={model} value={model}>
+                                            {model}{model === aiSettings.default_gemini_model ? ' (Default)' : ''}
+                                        </option>
+                                    )) || (
+                                            <option value={settings.external_ai_model}>{settings.external_ai_model}</option>
+                                        )}
                                 </select>
                             </div>
 

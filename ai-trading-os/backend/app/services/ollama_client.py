@@ -6,12 +6,14 @@ import httpx
 import logging
 from typing import Dict, Any, Optional
 
+from app.core.ai_models import DEFAULT_LOCAL_MODEL
+
 logger = logging.getLogger(__name__)
 
 class OllamaClient:
     def __init__(self, base_url: str):
         self.base_url = base_url
-        self.model = "llama3.2:3b" # Default model
+        self.model = DEFAULT_LOCAL_MODEL  # Use centralized default
 
     async def is_available(self) -> bool:
         """Check if Ollama is running"""

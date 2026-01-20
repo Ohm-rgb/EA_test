@@ -42,7 +42,7 @@ class Settings(Base):
     
     # AI Settings
     primary_ai_provider = Column(String(20), default="ollama")
-    local_ai_model = Column(String(50), default="llama3.2")
+    local_ai_model = Column(String(50), default="qwen3:8b")
     external_ai_provider = Column(String(20), default="gemini")
     external_ai_model = Column(String(50), default="gemini-2.5-flash")
     gemini_api_key = Column(String(255), nullable=True)
@@ -85,6 +85,7 @@ class BotProfile(Base):
     
     # Status
     is_active = Column(Boolean, default=False)
+    bot_state = Column(String(20), default="stopped")  # stopped/running/paused
     confidence_score = Column(Float, nullable=True)
     
     created_at = Column(DateTime, default=datetime.utcnow)
