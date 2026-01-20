@@ -134,247 +134,241 @@ export default function Settings() {
                         display: "grid",
                         gridTemplateColumns: "1.2fr 1fr",
                         gap: 32,
-                        alignItems: "start",
+                        alignItems: "stretch",
                     }}
                 >
-                    {/* LEFT COLUMN */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-                        {/* Zone A - Trading Guardrails */}
-                        <GlassCard>
-                            <div className="flex items-center gap-2 mb-6">
-                                <span className="text-emerald-400 text-xl">🛡️</span>
-                                <h3 className="text-lg font-semibold">Trading Guardrails</h3>
-                            </div>
+                    {/* Row 1 Left - Trading Guardrails */}
+                    <GlassCard>
+                        <div className="flex items-center gap-2 mb-6">
+                            <span className="text-emerald-400 text-xl">🛡️</span>
+                            <h3 className="text-lg font-semibold">Trading Guardrails</h3>
+                        </div>
 
-                            <div className="space-y-6">
-                                {/* Risk Profile */}
-                                <div>
-                                    <label className="block text-sm text-[var(--text-secondary)] mb-2">Risk Profile</label>
-                                    <div className="flex gap-2">
-                                        <Chip active={riskProfile === 'conservative'} onClick={() => handleUpdate({ risk_profile: 'conservative' })}>
-                                            🧠 Conservative
-                                        </Chip>
-                                        <Chip active={riskProfile === 'balanced'} onClick={() => handleUpdate({ risk_profile: 'balanced' })}>
-                                            ⚖️ Balanced
-                                        </Chip>
-                                        <Chip active={riskProfile === 'aggressive'} onClick={() => handleUpdate({ risk_profile: 'aggressive' })}>
-                                            🔥 Aggressive
-                                        </Chip>
-                                    </div>
-                                </div>
-
-                                {/* Max Drawdown */}
-                                <div>
-                                    <div className="flex justify-between mb-2">
-                                        <label className="text-sm text-[var(--text-secondary)]">Max Drawdown</label>
-                                        <span className="font-medium">{settings.max_drawdown_percent}%</span>
-                                    </div>
-                                    <input
-                                        type="range"
-                                        min="5"
-                                        max="20"
-                                        value={settings.max_drawdown_percent}
-                                        onChange={(e) => handleUpdate({ max_drawdown_percent: Number(e.target.value) })}
-                                        className="w-full"
-                                    />
-                                    <div className="flex justify-between text-xs text-[var(--text-muted)] mt-1">
-                                        <span>0-5%</span>
-                                        <span>5-15%</span>
-                                        <span>15-20%</span>
-                                    </div>
-                                </div>
-
-                                {/* News Sensitivity */}
-                                <div>
-                                    <label className="block text-sm text-[var(--text-secondary)] mb-2">News Sensitivity</label>
-                                    <div className="flex gap-2">
-                                        <Chip active={settings.news_sensitivity === 'off'} onClick={() => handleUpdate({ news_sensitivity: 'off' })}>
-                                            Off
-                                        </Chip>
-                                        <Chip active={settings.news_sensitivity === 'soft_filter'} onClick={() => handleUpdate({ news_sensitivity: 'soft_filter' })}>
-                                            Soft
-                                        </Chip>
-                                        <Chip active={settings.news_sensitivity === 'hard_lock'} onClick={() => handleUpdate({ news_sensitivity: 'hard_lock' })}>
-                                            Hard
-                                        </Chip>
-                                    </div>
-                                    <p className="text-xs text-[var(--text-muted)] mt-2">
-                                        Soft: Delays execution during high-impact events
-                                    </p>
-                                </div>
-                            </div>
-                        </GlassCard>
-
-                        {/* Zone C - AI Engine (Local) */}
-                        <GlassCard>
-                            <div className="flex items-center justify-between mb-6">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-purple-400 text-xl">🧠</span>
-                                    <h3 className="text-lg font-semibold">AI Engine</h3>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    {settings.primary_ai_provider === 'ollama' && <span className="text-xs text-emerald-400">Primary</span>}
-                                    {aiSettings?.has_ollama ? (
-                                        <Badge variant="success">Connected</Badge>
-                                    ) : (
-                                        <Badge variant="danger">Disconnected</Badge>
-                                    )}
+                        <div className="space-y-6">
+                            {/* Risk Profile */}
+                            <div>
+                                <label className="block text-sm text-[var(--text-secondary)] mb-2">Risk Profile</label>
+                                <div className="flex gap-2">
+                                    <Chip active={riskProfile === 'conservative'} onClick={() => handleUpdate({ risk_profile: 'conservative' })}>
+                                        🧠 Conservative
+                                    </Chip>
+                                    <Chip active={riskProfile === 'balanced'} onClick={() => handleUpdate({ risk_profile: 'balanced' })}>
+                                        ⚖️ Balanced
+                                    </Chip>
+                                    <Chip active={riskProfile === 'aggressive'} onClick={() => handleUpdate({ risk_profile: 'aggressive' })}>
+                                        🔥 Aggressive
+                                    </Chip>
                                 </div>
                             </div>
 
-                            <div className="space-y-4">
+                            {/* Max Drawdown */}
+                            <div>
+                                <div className="flex justify-between mb-2">
+                                    <label className="text-sm text-[var(--text-secondary)]">Max Drawdown</label>
+                                    <span className="font-medium">{settings.max_drawdown_percent}%</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="5"
+                                    max="20"
+                                    value={settings.max_drawdown_percent}
+                                    onChange={(e) => handleUpdate({ max_drawdown_percent: Number(e.target.value) })}
+                                    className="w-full"
+                                />
+                                <div className="flex justify-between text-xs text-[var(--text-muted)] mt-1">
+                                    <span>0-5%</span>
+                                    <span>5-15%</span>
+                                    <span>15-20%</span>
+                                </div>
+                            </div>
+
+                            {/* News Sensitivity */}
+                            <div>
+                                <label className="block text-sm text-[var(--text-secondary)] mb-2">News Sensitivity</label>
+                                <div className="flex gap-2">
+                                    <Chip active={settings.news_sensitivity === 'off'} onClick={() => handleUpdate({ news_sensitivity: 'off' })}>
+                                        Off
+                                    </Chip>
+                                    <Chip active={settings.news_sensitivity === 'soft_filter'} onClick={() => handleUpdate({ news_sensitivity: 'soft_filter' })}>
+                                        Soft
+                                    </Chip>
+                                    <Chip active={settings.news_sensitivity === 'hard_lock'} onClick={() => handleUpdate({ news_sensitivity: 'hard_lock' })}>
+                                        Hard
+                                    </Chip>
+                                </div>
+                                <p className="text-xs text-[var(--text-muted)] mt-2">
+                                    Soft: Delays execution during high-impact events
+                                </p>
+                            </div>
+                        </div>
+                    </GlassCard>
+
+                    {/* Row 1 Right - Integrations */}
+                    <GlassCard>
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-2">
+                                <span className="text-orange-400 text-xl">🔌</span>
+                                <h3 className="text-lg font-semibold">Integrations</h3>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <div className="flex justify-between items-center mb-2">
+                                    <label className="text-sm font-medium">MT5 Connection</label>
+                                    <Badge variant="success">Connected</Badge>
+                                </div>
+                                <label className="block text-xs text-[var(--text-secondary)] mb-1">Server Address</label>
+                                <div className="input-field mb-2 bg-black/20 text-sm">
+                                    {settings.mt5_server || 'Not set'}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <div className="flex justify-between mb-2">
-                                        <label className="block text-sm text-[var(--text-secondary)]">Local AI (Ollama)</label>
-                                        <button
-                                            onClick={() => handleUpdate({ primary_ai_provider: 'ollama' })}
-                                            className={`text-xs px-2 py-1 rounded ${settings.primary_ai_provider === 'ollama' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 hover:bg-white/10'}`}
-                                        >
-                                            Set as Primary
-                                        </button>
-                                    </div>
-                                    <select
-                                        className="dropdown w-full"
-                                        value={settings.local_ai_model}
-                                        onChange={(e) => handleUpdate({ local_ai_model: e.target.value })}
+                                    <label className="block text-xs text-[var(--text-secondary)] mb-1">Login ID</label>
+                                    <div className="input-field bg-black/20 text-sm">123456789</div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-[var(--text-secondary)] mb-1">Account Type</label>
+                                    <div className="input-field bg-black/20 text-sm">{settings.mt5_account_type}</div>
+                                </div>
+                            </div>
+
+                            <Button variant="ghost" className="w-full text-sm">
+                                Test Connection
+                            </Button>
+                        </div>
+                    </GlassCard>
+
+                    {/* Row 2 Left - AI Engine (Local) */}
+                    <GlassCard>
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-2">
+                                <span className="text-purple-400 text-xl">🧠</span>
+                                <h3 className="text-lg font-semibold">AI Engine</h3>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {settings.primary_ai_provider === 'ollama' && <span className="text-xs text-emerald-400">Primary</span>}
+                                {aiSettings?.has_ollama ? (
+                                    <Badge variant="success">Connected</Badge>
+                                ) : (
+                                    <Badge variant="danger">Disconnected</Badge>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <div className="flex justify-between mb-2">
+                                    <label className="block text-sm text-[var(--text-secondary)]">Local AI (Ollama)</label>
+                                    <button
+                                        onClick={() => handleUpdate({ primary_ai_provider: 'ollama' })}
+                                        className={`text-xs px-2 py-1 rounded ${settings.primary_ai_provider === 'ollama' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 hover:bg-white/10'}`}
                                     >
-                                        {aiSettings?.available_local_models?.map(model => (
-                                            <option key={model} value={model}>
-                                                {model}{model === aiSettings.default_local_model ? ' (Default)' : ''}
-                                            </option>
-                                        )) || (
-                                                <option value={settings.local_ai_model}>{settings.local_ai_model}</option>
-                                            )}
-                                    </select>
+                                        Set as Primary
+                                    </button>
                                 </div>
-
-                                <div className="p-3 rounded-lg bg-[var(--bg-tertiary)]">
-                                    <div className="flex justify-between text-sm mb-1">
-                                        <span className="text-[var(--text-secondary)]">Status</span>
-                                        <span className={aiSettings?.has_ollama ? 'text-emerald-400' : 'text-red-400'}>
-                                            {aiSettings?.has_ollama ? '● Running' : '○ Not Running'}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-[var(--text-secondary)]">Available Models</span>
-                                        <span>{aiSettings?.available_local_models?.length || 0}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </GlassCard>
-                    </div>
-
-                    {/* RIGHT COLUMN */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-                        {/* Zone B - Integrations */}
-                        <GlassCard>
-                            <div className="flex items-center justify-between mb-6">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-orange-400 text-xl">🔌</span>
-                                    <h3 className="text-lg font-semibold">Integrations</h3>
-                                </div>
+                                <select
+                                    className="dropdown w-full"
+                                    value={settings.local_ai_model}
+                                    onChange={(e) => handleUpdate({ local_ai_model: e.target.value })}
+                                >
+                                    {aiSettings?.available_local_models?.map(model => (
+                                        <option key={model} value={model}>
+                                            {model}{model === aiSettings.default_local_model ? ' (Default)' : ''}
+                                        </option>
+                                    )) || (
+                                            <option value={settings.local_ai_model}>{settings.local_ai_model}</option>
+                                        )}
+                                </select>
                             </div>
 
-                            <div className="space-y-4">
-                                <div>
-                                    <div className="flex justify-between items-center mb-2">
-                                        <label className="text-sm font-medium">MT5 Connection</label>
-                                        <Badge variant="success">Connected</Badge>
-                                    </div>
-                                    <label className="block text-xs text-[var(--text-secondary)] mb-1">Server Address</label>
-                                    <div className="input-field mb-2 bg-black/20 text-sm">
-                                        {settings.mt5_server || 'Not set'}
-                                    </div>
+                            <div className="p-3 rounded-lg bg-[var(--bg-tertiary)]">
+                                <div className="flex justify-between text-sm mb-1">
+                                    <span className="text-[var(--text-secondary)]">Status</span>
+                                    <span className={aiSettings?.has_ollama ? 'text-emerald-400' : 'text-red-400'}>
+                                        {aiSettings?.has_ollama ? '● Running' : '○ Not Running'}
+                                    </span>
                                 </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs text-[var(--text-secondary)] mb-1">Login ID</label>
-                                        <div className="input-field bg-black/20 text-sm">123456789</div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-[var(--text-secondary)] mb-1">Account Type</label>
-                                        <div className="input-field bg-black/20 text-sm">{settings.mt5_account_type}</div>
-                                    </div>
-                                </div>
-
-                                <Button variant="ghost" className="w-full text-sm">
-                                    Test Connection
-                                </Button>
-                            </div>
-                        </GlassCard>
-
-                        {/* Zone C - AI Engine (External) */}
-                        <GlassCard>
-                            <div className="flex items-center justify-between mb-6">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-blue-400 text-xl">☁️</span>
-                                    <h3 className="text-lg font-semibold">External AI (Gemini)</h3>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    {settings.primary_ai_provider === 'gemini' && <span className="text-xs text-emerald-400">Primary</span>}
-                                    {aiSettings?.has_gemini_key ? (
-                                        <Badge variant="info">Configured</Badge>
-                                    ) : (
-                                        <Badge variant="warning">Not Configured</Badge>
-                                    )}
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-[var(--text-secondary)]">Available Models</span>
+                                    <span>{aiSettings?.available_local_models?.length || 0}</span>
                                 </div>
                             </div>
+                        </div>
+                    </GlassCard>
 
-                            <div className="space-y-4">
-                                <div>
-                                    <div className="flex justify-between mb-2">
-                                        <label className="block text-sm text-[var(--text-secondary)]">Provider</label>
-                                        <button
-                                            onClick={() => handleUpdate({ primary_ai_provider: 'gemini' })}
-                                            className={`text-xs px-2 py-1 rounded ${settings.primary_ai_provider === 'gemini' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 hover:bg-white/10'}`}
-                                        >
-                                            Set as Primary
-                                        </button>
-                                    </div>
-                                </div>
+                    {/* Row 2 Right - External AI (Gemini) */}
+                    <GlassCard>
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-2">
+                                <span className="text-blue-400 text-xl">☁️</span>
+                                <h3 className="text-lg font-semibold">External AI (Gemini)</h3>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {settings.primary_ai_provider === 'gemini' && <span className="text-xs text-emerald-400">Primary</span>}
+                                {aiSettings?.has_gemini_key ? (
+                                    <Badge variant="info">Configured</Badge>
+                                ) : (
+                                    <Badge variant="warning">Not Configured</Badge>
+                                )}
+                            </div>
+                        </div>
 
-                                <div>
-                                    <label className="block text-sm text-[var(--text-secondary)] mb-2">API Key</label>
-                                    <input
-                                        type="password"
-                                        placeholder={aiSettings?.has_gemini_key ? '••••••••••••••••' : 'Enter Gemini API Key'}
-                                        onChange={(e) => handleUpdate({ gemini_api_key: e.target.value })}
-                                        className="input-field"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm text-[var(--text-secondary)] mb-2">Model</label>
-                                    <select
-                                        className="dropdown w-full"
-                                        value={settings.external_ai_model}
-                                        onChange={(e) => handleUpdate({ external_ai_model: e.target.value })}
+                        <div className="space-y-4">
+                            <div>
+                                <div className="flex justify-between mb-2">
+                                    <label className="block text-sm text-[var(--text-secondary)]">Provider</label>
+                                    <button
+                                        onClick={() => handleUpdate({ primary_ai_provider: 'gemini' })}
+                                        className={`text-xs px-2 py-1 rounded ${settings.primary_ai_provider === 'gemini' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 hover:bg-white/10'}`}
                                     >
-                                        {aiSettings?.available_gemini_models?.map(model => (
-                                            <option key={model} value={model}>
-                                                {model}{model === aiSettings.default_gemini_model ? ' (Default)' : ''}
-                                            </option>
-                                        )) || (
-                                                <option value={settings.external_ai_model}>{settings.external_ai_model}</option>
-                                            )}
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <div className="flex justify-between text-sm mb-2">
-                                        <span className="text-[var(--text-secondary)]">Token Usage</span>
-                                        <span>0 / {settings.monthly_token_limit.toLocaleString()}</span>
-                                    </div>
-                                    <ProgressBar value={0} max={settings.monthly_token_limit} />
-                                </div>
-
-                                <div className="text-right text-sm text-[var(--text-muted)]">
-                                    Limit: {settings.monthly_token_limit.toLocaleString()}
+                                        Set as Primary
+                                    </button>
                                 </div>
                             </div>
-                        </GlassCard>
-                    </div>
+
+                            <div>
+                                <label className="block text-sm text-[var(--text-secondary)] mb-2">API Key</label>
+                                <input
+                                    type="password"
+                                    placeholder={aiSettings?.has_gemini_key ? '••••••••••••••••' : 'Enter Gemini API Key'}
+                                    onChange={(e) => handleUpdate({ gemini_api_key: e.target.value })}
+                                    className="input-field"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm text-[var(--text-secondary)] mb-2">Model</label>
+                                <select
+                                    className="dropdown w-full"
+                                    value={settings.external_ai_model}
+                                    onChange={(e) => handleUpdate({ external_ai_model: e.target.value })}
+                                >
+                                    {aiSettings?.available_gemini_models?.map(model => (
+                                        <option key={model} value={model}>
+                                            {model}{model === aiSettings.default_gemini_model ? ' (Default)' : ''}
+                                        </option>
+                                    )) || (
+                                            <option value={settings.external_ai_model}>{settings.external_ai_model}</option>
+                                        )}
+                                </select>
+                            </div>
+
+                            <div>
+                                <div className="flex justify-between text-sm mb-2">
+                                    <span className="text-[var(--text-secondary)]">Token Usage</span>
+                                    <span>0 / {settings.monthly_token_limit.toLocaleString()}</span>
+                                </div>
+                                <ProgressBar value={0} max={settings.monthly_token_limit} />
+                            </div>
+
+                            <div className="text-right text-sm text-[var(--text-muted)]">
+                                Limit: {settings.monthly_token_limit.toLocaleString()}
+                            </div>
+                        </div>
+                    </GlassCard>
                 </div>
             </div>
         </div>

@@ -71,3 +71,12 @@ Timeline:
   - 20:38: Grouped cards into Left (Guardrails, Local AI) and Right (Integrations, External AI) columns.
   - 20:40: Frontend build successful.
 Notes: Layout now correctly implements the intended Apple-style presentation with proper breathing room and hierarchy.
+
+Task: Debugging Layout & Sidebar Issues
+Status: Completed
+Timeline:
+  - 21:05: Fixed Sidebar Z-Index issue (content was sliding under sidebar).
+  - 21:05: Added `ml-[80px]` to RootLayout main content area to offset fixed sidebar.
+  - 21:20: Fixed Dashboard compression issue (double padding).
+  - 21:20: Removed redundant `padding-left: 76px` from `.dashboard-container` in globals.css.
+Notes: Resolved layout conflicts. Sidebar now properly pushes content, and Dashboard utilizes full available width without indentation artifacts.

@@ -646,8 +646,7 @@ body {
   grid-template-columns: 1fr 1.5fr 1fr;
   gap: 16px;
   padding: 16px;
-  padding-left: 76px;
-  /* Sidebar offset */
+  /* Sidebar offset handled in layout.tsx */
   min-height: 100vh;
   background: var(--bg-primary);
 }
