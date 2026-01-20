@@ -158,27 +158,41 @@ function ActiveOrders() {
 
 // Control Panel Component
 function ControlPanel() {
-  const [systemMode, setSystemMode] = useState<'mt5' | 'ai'>('ai');
+  const [mt5Connected, setMt5Connected] = useState(true);
+  const [aiLocalActive, setAiLocalActive] = useState(true);
+  const [aiCloudActive, setAiCloudActive] = useState(false);
   const [autoTrading, setAutoTrading] = useState(true);
   const [riskLevel, setRiskLevel] = useState<'low' | 'mid' | 'high'>('mid');
 
   return (
     <div className="control-panel">
-      {/* System Toggle */}
-      <div className="system-toggle">
-        <button
-          className={`system-btn ${systemMode === 'mt5' ? 'active' : ''}`}
-          onClick={() => setSystemMode('mt5')}
-        >
-          MT5
-        </button>
-        <button
-          className={`system-btn ${systemMode === 'ai' ? 'active' : ''}`}
-          onClick={() => setSystemMode('ai')}
-        >
-          AI
-        </button>
-        <span className="system-label">AI System (Local/Cloud)</span>
+      {/* Connection Status - All in one row */}
+      <div className="connection-status-row">
+        {/* MT5 */}
+        <div className="status-item">
+          <span className="status-label">MT5</span>
+          <button
+            className={`mini-toggle ${mt5Connected ? 'on' : ''}`}
+            onClick={() => setMt5Connected(!mt5Connected)}
+          >
+            <span className="mini-toggle-slider" />
+          </button>
+        </div>
+
+        {/* Divider */}
+        <div className="status-divider" />
+
+        {/* AI Local */}
+        <div className="status-item">
+          <span className="status-label">AI Local</span>
+          <span className={`glow-dot ${aiLocalActive ? 'active' : ''}`} />
+        </div>
+
+        {/* AI Cloud */}
+        <div className="status-item">
+          <span className="status-label">AI Cloud</span>
+          <span className={`glow-dot ${aiCloudActive ? 'active' : ''}`} />
+        </div>
       </div>
 
       {/* Account Stats */}
