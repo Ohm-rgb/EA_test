@@ -71,18 +71,40 @@ async def send_chat_message(
     )
     db.add(user_msg)
     
-    # Generate AI response (mock for now)
-    # In real implementation, this would call Ollama first, then Gemini if needed
-    response_content = _generate_mock_response(message.content, message.context_page)
-    tokens_used = len(message.content.split()) + len(response_content.split())
+    # Generate AI response
+    from app.services.ai_service import ai_service
+    
+    # Prepare context
+    context = {
+        "context_page": message.context_page,
+        "user_id": current_user.get("id", 1)
+    }
+    
+    try:
+        ai_response = await ai_service.generate_response(
+            prompt=message.content, 
+            context=context
+        )
+        
+        response_content = ai_response["message"]
+        tokens_used = ai_response["tokens_used"]
+        model_used = ai_response["model_used"]
+        role = ai_response["role"]
+        
+    except Exception as e:
+        # Fallback error message (should be handled by ai_service, but just in case)
+        response_content = f"Error generating response: {str(e)}"
+        tokens_used = 0
+        model_used = "error"
+        role = "system"
     
     # Save AI response
     ai_msg = AIMessage(
         session_id=active_session.id,
-        role="local_ai",
+        role=role,
         content=response_content,
         tokens_used=tokens_used,
-        model_used="llama3.2:8b"
+        model_used=model_used
     )
     db.add(ai_msg)
     
@@ -93,9 +115,9 @@ async def send_chat_message(
     
     return ChatResponse(
         message=response_content,
-        role="local_ai",
+        role=role,
         tokens_used=tokens_used,
-        model_used="llama3.2:8b"
+        model_used=model_used
     )
 
 

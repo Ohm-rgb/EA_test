@@ -1,20 +1,98 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TopBar } from "@/components/layout";
 import { GlassCard, Button, Chip, Badge, ProgressBar } from "@/components/ui";
+import api, { Settings as SettingsType } from "@/lib/api";
 
 export default function Settings() {
-    const [riskProfile, setRiskProfile] = useState<'conservative' | 'balanced' | 'aggressive'>('balanced');
-    const [maxDrawdown, setMaxDrawdown] = useState(10);
-    const [newsSensitivity, setNewsSensitivity] = useState<'off' | 'soft' | 'hard'>('soft');
+    const [settings, setSettings] = useState<SettingsType | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
     const [advancedMode, setAdvancedMode] = useState(false);
+    const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+    // Fetch settings on load
+    useEffect(() => {
+        loadSettings();
+    }, []);
+
+    const loadSettings = async () => {
+        try {
+            setLoading(true);
+            const data = await api.getSettings();
+            setSettings(data);
+        } catch (err) {
+            console.error(err);
+            setMessage({ type: 'error', text: 'Failed to load settings' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleUpdate = async (updates: Partial<SettingsType>) => {
+        if (!settings) return;
+
+        // Optimistic update
+        setSettings({ ...settings, ...updates });
+        setMessage(null);
+        setSaving(true);
+
+        try {
+            await api.updateSettings(updates);
+            setMessage({ type: 'success', text: 'Settings saved' });
+
+            // Clear success message after 3 seconds
+            setTimeout(() => setMessage(null), 3000);
+        } catch (err) {
+            console.error(err);
+            setMessage({ type: 'error', text: 'Failed to save settings' });
+            // Revert on error (reload)
+            loadSettings();
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen">
+                <TopBar title="System Settings" />
+                <div className="p-6 flex justify-center items-center h-[calc(100vh-64px)]">
+                    <div className="text-emerald-400">Loading settings...</div>
+                </div>
+            </div>
+        );
+    }
+
+    if (!settings) {
+        return (
+            <div className="min-h-screen">
+                <TopBar title="System Settings" />
+                <div className="p-6 flex justify-center items-center h-[calc(100vh-64px)]">
+                    <div className="text-red-400">Failed to load settings. Is the backend running?</div>
+                </div>
+            </div>
+        );
+    }
+
+    // Helper to determine risk profile from settings (if it was stored differently)
+    // Here assuming risk_profile is stored directly as string
+    const riskProfile = settings.risk_profile || 'balanced';
 
     return (
         <div className="min-h-screen">
             <TopBar title="System Settings" />
 
-            <div className="p-6 fade-in">
+            <div className="p-6 fade-in pb-20">
+                {/* Message Toast */}
+                {message && (
+                    <div className={`fixed top-20 right-6 px-4 py-2 rounded-lg z-50 ${message.type === 'success' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                        }`}>
+                        {message.text}
+                    </div>
+                )}
+
                 {/* Advanced Settings Warning */}
                 {advancedMode && (
                     <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-3">
@@ -59,13 +137,13 @@ export default function Settings() {
                             <div>
                                 <label className="block text-sm text-[var(--text-secondary)] mb-2">Risk Profile</label>
                                 <div className="flex gap-2">
-                                    <Chip active={riskProfile === 'conservative'} onClick={() => setRiskProfile('conservative')}>
+                                    <Chip active={riskProfile === 'conservative'} onClick={() => handleUpdate({ risk_profile: 'conservative' })}>
                                         🧠 Conservative
                                     </Chip>
-                                    <Chip active={riskProfile === 'balanced'} onClick={() => setRiskProfile('balanced')}>
+                                    <Chip active={riskProfile === 'balanced'} onClick={() => handleUpdate({ risk_profile: 'balanced' })}>
                                         ⚖️ Balanced
                                     </Chip>
-                                    <Chip active={riskProfile === 'aggressive'} onClick={() => setRiskProfile('aggressive')}>
+                                    <Chip active={riskProfile === 'aggressive'} onClick={() => handleUpdate({ risk_profile: 'aggressive' })}>
                                         🔥 Aggressive
                                     </Chip>
                                 </div>
@@ -75,14 +153,14 @@ export default function Settings() {
                             <div>
                                 <div className="flex justify-between mb-2">
                                     <label className="text-sm text-[var(--text-secondary)]">Max Drawdown</label>
-                                    <span className="font-medium">{maxDrawdown}%</span>
+                                    <span className="font-medium">{settings.max_drawdown_percent}%</span>
                                 </div>
                                 <input
                                     type="range"
                                     min="5"
                                     max="20"
-                                    value={maxDrawdown}
-                                    onChange={(e) => setMaxDrawdown(Number(e.target.value))}
+                                    value={settings.max_drawdown_percent}
+                                    onChange={(e) => handleUpdate({ max_drawdown_percent: Number(e.target.value) })}
                                     className="w-full"
                                 />
                                 <div className="flex justify-between text-xs text-[var(--text-muted)] mt-1">
@@ -96,13 +174,13 @@ export default function Settings() {
                             <div>
                                 <label className="block text-sm text-[var(--text-secondary)] mb-2">News Sensitivity</label>
                                 <div className="flex gap-2">
-                                    <Chip active={newsSensitivity === 'off'} onClick={() => setNewsSensitivity('off')}>
+                                    <Chip active={settings.news_sensitivity === 'off'} onClick={() => handleUpdate({ news_sensitivity: 'off' })}>
                                         Off
                                     </Chip>
-                                    <Chip active={newsSensitivity === 'soft'} onClick={() => setNewsSensitivity('soft')}>
+                                    <Chip active={settings.news_sensitivity === 'soft_filter'} onClick={() => handleUpdate({ news_sensitivity: 'soft_filter' })}>
                                         Soft
                                     </Chip>
-                                    <Chip active={newsSensitivity === 'hard'} onClick={() => setNewsSensitivity('hard')}>
+                                    <Chip active={settings.news_sensitivity === 'hard_lock'} onClick={() => handleUpdate({ news_sensitivity: 'hard_lock' })}>
                                         Hard
                                     </Chip>
                                 </div>
@@ -132,8 +210,8 @@ export default function Settings() {
                                         <label className="block text-xs text-[var(--text-muted)] mb-1">Server Address</label>
                                         <input
                                             type="text"
-                                            value="mt5.broker.com:443"
-                                            readOnly
+                                            value={settings.mt5_server || 'mt5.broker.com:443'}
+                                            onChange={(e) => handleUpdate({ mt5_server: e.target.value })}
                                             className="input-field text-sm"
                                         />
                                     </div>
@@ -148,22 +226,16 @@ export default function Settings() {
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-xs text-[var(--text-muted)] mb-1">Password</label>
+                                            <label className="block text-xs text-[var(--text-muted)] mb-1">Account Type</label>
                                             <input
-                                                type="password"
-                                                value="********"
+                                                type="text"
+                                                value={settings.mt5_account_type}
                                                 readOnly
                                                 className="input-field text-sm"
                                             />
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-
-                            {/* Broker API */}
-                            <div className="flex items-center justify-between py-3 border-t border-[var(--glass-border)]">
-                                <span className="font-medium">Broker API</span>
-                                <Badge variant="success">Active - Rate Limit OK</Badge>
                             </div>
 
                             <Button variant="ghost" className="w-full">
@@ -179,16 +251,31 @@ export default function Settings() {
                                 <span className="text-purple-400 text-xl">🧠</span>
                                 <h3 className="text-lg font-semibold">AI Engine</h3>
                             </div>
-                            <Badge variant="success">Connected</Badge>
+                            <div className="flex items-center gap-2">
+                                {settings.primary_ai_provider === 'ollama' && <span className="text-xs text-emerald-400">Primary</span>}
+                                <Badge variant="success">Connected</Badge>
+                            </div>
                         </div>
 
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm text-[var(--text-secondary)] mb-2">Local AI (Ollama)</label>
-                                <select className="dropdown w-full">
-                                    <option>llama3.2:8b</option>
-                                    <option>llama3.2:70b</option>
-                                    <option>mistral:7b</option>
+                                <div className="flex justify-between mb-2">
+                                    <label className="block text-sm text-[var(--text-secondary)]">Local AI (Ollama)</label>
+                                    <button
+                                        onClick={() => handleUpdate({ primary_ai_provider: 'ollama' })}
+                                        className={`text-xs px-2 py-1 rounded ${settings.primary_ai_provider === 'ollama' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 hover:bg-white/10'}`}
+                                    >
+                                        Set as Primary
+                                    </button>
+                                </div>
+                                <select
+                                    className="dropdown w-full"
+                                    value={settings.local_ai_model}
+                                    onChange={(e) => handleUpdate({ local_ai_model: e.target.value })}
+                                >
+                                    <option value="llama3.2:3b">llama3.2:3b</option>
+                                    <option value="llama3.2:8b">llama3.2:8b</option>
+                                    <option value="mistral:7b">mistral:7b</option>
                                 </select>
                             </div>
 
@@ -216,69 +303,67 @@ export default function Settings() {
                                 <span className="text-blue-400 text-xl">☁️</span>
                                 <h3 className="text-lg font-semibold">External AI (Gemini)</h3>
                             </div>
-                            <Badge variant="info">Running - Low Latency</Badge>
+                            <div className="flex items-center gap-2">
+                                {settings.primary_ai_provider === 'gemini' && <span className="text-xs text-emerald-400">Primary</span>}
+                                {settings.gemini_api_key ? (
+                                    <Badge variant="info">Configured</Badge>
+                                ) : (
+                                    <Badge variant="warning">Not Configured</Badge>
+                                )}
+                            </div>
                         </div>
 
                         <div className="space-y-4">
                             <div>
+                                <div className="flex justify-between mb-2">
+                                    <label className="block text-sm text-[var(--text-secondary)]">Provider</label>
+                                    <button
+                                        onClick={() => handleUpdate({ primary_ai_provider: 'gemini' })}
+                                        className={`text-xs px-2 py-1 rounded ${settings.primary_ai_provider === 'gemini' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 hover:bg-white/10'}`}
+                                    >
+                                        Set as Primary
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
                                 <label className="block text-sm text-[var(--text-secondary)] mb-2">API Key</label>
                                 <input
                                     type="password"
-                                    value="********************************"
+                                    value={settings.gemini_api_key || ''}
+                                    placeholder="Enter Gemini API Key"
+                                    onChange={(e) => handleUpdate({ gemini_api_key: e.target.value })}
                                     className="input-field"
                                 />
                             </div>
 
                             <div>
                                 <label className="block text-sm text-[var(--text-secondary)] mb-2">Model</label>
-                                <select className="dropdown w-full">
-                                    <option>gemini-1.5-flash</option>
-                                    <option>gemini-1.5-pro</option>
-                                    <option>gemini-2.0-flash</option>
+                                <select
+                                    className="dropdown w-full"
+                                    value={settings.external_ai_model}
+                                    onChange={(e) => handleUpdate({ external_ai_model: e.target.value })}
+                                >
+                                    <option value="gemini-3-flash">gemini-3-flash (Latest)</option>
+                                    <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+                                    <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
                                 </select>
                             </div>
 
                             <div>
                                 <div className="flex justify-between text-sm mb-2">
                                     <span className="text-[var(--text-secondary)]">Token Usage</span>
-                                    <span>45,000 / 100,000</span>
+                                    <span>0 / {settings.monthly_token_limit.toLocaleString()}</span>
                                 </div>
-                                <ProgressBar value={45000} max={100000} />
+                                <ProgressBar value={0} max={settings.monthly_token_limit} />
                             </div>
 
                             <div className="text-right text-sm text-[var(--text-muted)]">
-                                Cost estimate: ~$2.50
+                                Limit: {settings.monthly_token_limit.toLocaleString()}
                             </div>
                         </div>
                     </GlassCard>
                 </div>
-
-                {/* Audit Log */}
-                <GlassCard className="p-6 mt-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-semibold">Audit Log Preview</h3>
-                        <button className="text-sm text-emerald-400 hover:underline">View All</button>
-                    </div>
-
-                    <div className="space-y-2 text-sm">
-                        <div className="flex items-center gap-3 py-2 border-b border-[var(--glass-border)]">
-                            <span className="text-[var(--text-muted)]">14:32 PM</span>
-                            <span>User 'Admin' updated Risk Profile to 'Balanced'</span>
-                        </div>
-                        <div className="flex items-center gap-3 py-2 border-b border-[var(--glass-border)]">
-                            <span className="text-[var(--text-muted)]">14:30 PM</span>
-                            <span>System performed automatic backup</span>
-                        </div>
-                        <div className="flex items-center gap-3 py-2">
-                            <span className="text-[var(--text-muted)]">12:15 PM</span>
-                            <span>API Key for Gemini updated by User 'Dev1'</span>
-                        </div>
-                    </div>
-
-                    <div className="mt-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-sm">
-                        <span className="text-amber-400">⚠️ Changes require confirmation before taking effect. Ensure settings are reviewed.</span>
-                    </div>
-                </GlassCard>
             </div>
         </div>
     );

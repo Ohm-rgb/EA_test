@@ -13,16 +13,19 @@ router = APIRouter()
 
 
 class SettingsResponse(BaseModel):
-    risk_profile: str
-    max_drawdown_percent: float
-    daily_loss_limit: Optional[float]
-    news_sensitivity: str
-    local_ai_model: str
-    external_ai_provider: str
-    external_ai_model: str
-    monthly_token_limit: int
-    mt5_server: Optional[str]
-    mt5_account_type: str
+    risk_profile: Optional[str] = "balanced"
+    max_drawdown_percent: Optional[float] = 10.0
+    daily_loss_limit: Optional[float] = None
+    news_sensitivity: Optional[str] = "soft_filter"
+    primary_ai_provider: Optional[str] = "ollama"
+    local_ai_model: Optional[str] = "llama3.2"
+    external_ai_provider: Optional[str] = "gemini"
+    external_ai_model: Optional[str] = "gemini-2.5-flash"
+    gemini_api_key: Optional[str] = None
+    openai_api_key: Optional[str] = None
+    monthly_token_limit: Optional[int] = 100000
+    mt5_server: Optional[str] = None
+    mt5_account_type: Optional[str] = "demo"
 
     class Config:
         from_attributes = True
@@ -33,12 +36,20 @@ class SettingsUpdate(BaseModel):
     max_drawdown_percent: Optional[float] = None
     daily_loss_limit: Optional[float] = None
     news_sensitivity: Optional[str] = None
+    # Support updating AI settings here too
+    primary_ai_provider: Optional[str] = None
+    gemini_api_key: Optional[str] = None
+    openai_api_key: Optional[str] = None
+    monthly_token_limit: Optional[int] = None
 
 
 class AISettingsUpdate(BaseModel):
+    primary_ai_provider: Optional[str] = None
     local_ai_model: Optional[str] = None
     external_ai_provider: Optional[str] = None
     external_ai_model: Optional[str] = None
+    gemini_api_key: Optional[str] = None
+    openai_api_key: Optional[str] = None
     monthly_token_limit: Optional[int] = None
 
 
@@ -89,9 +100,13 @@ async def get_ai_settings(
         raise HTTPException(status_code=404, detail="Settings not found")
     
     return {
+    return {
+        "primary_ai_provider": settings.primary_ai_provider,
         "local_ai_model": settings.local_ai_model,
         "external_ai_provider": settings.external_ai_provider,
         "external_ai_model": settings.external_ai_model,
+        "gemini_api_key": settings.gemini_api_key,
+        "openai_api_key": settings.openai_api_key,
         "monthly_token_limit": settings.monthly_token_limit
     }
 
@@ -111,6 +126,11 @@ async def update_ai_settings(
         setattr(settings, key, value)
     
     db.commit()
+    
+    # Update active AI service
+    from app.services.ai_service import ai_service
+    ai_service.update_settings(data.model_dump(exclude_unset=True))
+    
     return {"message": "AI settings updated successfully"}
 
 

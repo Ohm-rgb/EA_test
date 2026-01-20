@@ -41,9 +41,12 @@ class Settings(Base):
     news_sensitivity = Column(String(20), default="soft_filter")
     
     # AI Settings
+    primary_ai_provider = Column(String(20), default="ollama")
     local_ai_model = Column(String(50), default="llama3.2")
     external_ai_provider = Column(String(20), default="gemini")
-    external_ai_model = Column(String(50), default="gemini-1.5-flash")
+    external_ai_model = Column(String(50), default="gemini-2.5-flash")
+    gemini_api_key = Column(String(255), nullable=True)
+    openai_api_key = Column(String(255), nullable=True)
     monthly_token_limit = Column(Integer, default=100000)
     
     # MT5 Connection
