@@ -53,3 +53,12 @@ Timeline:
   - 20:04: Updated status indicators to show has_ollama and has_gemini_key from API.
   - 20:05: Frontend build successful.
 Notes: Settings dropdown now shows all 6 Ollama models from backend. API keys masked in input fields.
+
+Task: Settings Page UI Polish
+Status: Completed
+Timeline:
+  - 20:15: Updated globals.css with Apple-style design system (shadows, typography, badges).
+  - 20:20: Fixed CSS specificity issues by converting GlassCard, Badge, and Chip to use inline styles.
+  - 20:25: Verified UI rendering with debug mode (red background test).
+  - 20:26: Applied final production styles (Dark glass, subtle borders, gold gradients).
+Notes: Solved Tailwind overriding globals.css issue by using React inline styles for core UI components.
