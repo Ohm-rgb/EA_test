@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from app.core import get_db, get_password_hash, verify_password, create_access_token
+from app.core.security import get_current_user
 from app.models import User, Settings
 
 router = APIRouter()
@@ -100,7 +101,3 @@ async def setup_user(request: LoginRequest, db: Session = Depends(get_db)):
     db.commit()
     
     return {"message": "User created successfully", "username": user.username}
-
-
-# Import get_current_user here to avoid circular import
-from app.core.security import get_current_user
