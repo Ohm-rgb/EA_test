@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  # Frontend - Next.js
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/Dockerfile.frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+
+  # Backend - FastAPI
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../docker/Dockerfile.backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./dev.db
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production}
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - CORS_ORIGINS=http://localhost:3000
+    volumes:
+      - ./backend:/app
+      - backend-data:/app/data
+
+  # Redis (optional, for caching)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+volumes:
+  backend-data:
+  redis-data:
