@@ -62,3 +62,12 @@ Timeline:
   - 20:25: Verified UI rendering with debug mode (red background test).
   - 20:26: Applied final production styles (Dark glass, subtle borders, gold gradients).
 Notes: Solved Tailwind overriding globals.css issue by using React inline styles for core UI components.
+
+Task: Settings Page Layout Restructure
+Status: Completed
+Timeline:
+  - 20:35: Identified root cause of layout issues (grid-cols-2 constraint).
+  - 20:38: Restructured Settings page to use asymmetric grid (1.2fr 1fr).
+  - 20:38: Grouped cards into Left (Guardrails, Local AI) and Right (Integrations, External AI) columns.
+  - 20:40: Frontend build successful.
+Notes: Layout now correctly implements the intended Apple-style presentation with proper breathing room and hierarchy.
