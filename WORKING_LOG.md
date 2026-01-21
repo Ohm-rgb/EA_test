@@ -157,3 +157,11 @@ Timeline:
   - 20:50: Created `docs/data_flow_overview.md` mapping inputs/outputs for AI, Bots, Settings, and Portfolio.
   - 20:55: Included Mermaid diagram for system architecture.
 Notes: Provides a clear reference for debugging and future development.
+
+Task: Bot Studio Layout Refactor
+Status: Completed
+Timeline:
+  - 21:30: Implemented Folder Layout metaphor with "Strategy" and "Backtesting" tabs.
+  - 21:45: Refactored to Full-Viewport Workspace (h-screen, no margins).
+  - 21:50: Fixed scrolling behavior to be panel-specific (no global scroll).
+Notes: Transformed Bot Studio from a card-based page to an application-grade workspace layout.
