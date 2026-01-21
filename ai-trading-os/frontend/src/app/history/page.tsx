@@ -74,7 +74,7 @@ export default function HistoryPage() {
     // e.g. bg-[var(--bg-secondary)] handles 'bg-[#F9F9FC]' in light and 'bg-[#1a1a1a]' in dark.
 
     return (
-        <div className="min-h-screen bg-[var(--bg-primary)] p-8 text-[var(--text-primary)] relative overflow-hidden font-sans transition-colors duration-500">
+        <div className="min-h-screen bg-[var(--bg-primary)] p-2 text-[var(--text-primary)] relative overflow-hidden font-sans transition-colors duration-500">
             {/* Ambient Background */}
             <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0">
                 <div className={`absolute top-[-20%] right-[-20%] w-[800px] h-[800px] rounded-full blur-[150px] transition-colors duration-700 ${theme === 'light' ? 'bg-[#C7C5E5]/20' : 'bg-violet-600/10'
@@ -83,98 +83,104 @@ export default function HistoryPage() {
                     }`} />
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto space-y-4">
+            <div className="relative z-10 w-full max-w-[2400px] mx-auto px-4">
 
-                {/* Header - Structural Container */}
-                {/* Header - Full-width Section */}
-                <div className="flex justify-between items-center w-full pt-2 pb-1">
-                    <div className="flex items-baseline gap-4">
-                        <h1 className="text-3xl font-bold text-[var(--text-primary)] tracking-tight">
+                {/* Folder Header System */}
+                <div className="flex items-end -mb-[1px] relative z-20 mx-1">
+                    {/* Tab: The Label */}
+                    <div className="bg-[var(--bg-secondary)] px-6 py-2 rounded-t-lg border-t border-x border-[var(--glass-border)] shadow-[0_-2px_10px_rgba(0,0,0,0.02)] flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-[var(--color-accent)] animate-pulse" />
+                        <h1 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
                             Analytics Dashboard
                         </h1>
-                        <p className="text-[var(--text-secondary)] text-sm font-medium">Performance insights & trading behavior analysis</p>
                     </div>
 
-                    <div className="flex bg-[var(--bg-tertiary)] rounded-lg p-1 border border-[var(--glass-border)] shadow-sm shrink-0">
-                        {(['W', 'M', 'Q'] as const).map((p) => (
-                            <button
-                                key={p}
-                                onClick={() => setPeriod(p)}
-                                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-300 ${period === p
-                                    ? 'bg-[var(--bg-secondary)] text-[var(--text-primary)] shadow-md border border-[var(--glass-border)]'
-                                    : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)]'
-                                    }`}
-                            >
-                                {p === 'W' ? 'Week' : p === 'M' ? 'Month' : 'Quarter'}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* KPI Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <MetricCard
-                        label="Net Profit"
-                        value={data.kpi.profit.value}
-                        trend={data.kpi.profit.trend}
-                        data={data.kpi.profit.data}
-                        color={data.kpi.profit.color}
-                        // Use semantic container class
-                        className="bg-[var(--bg-secondary)] border border-[var(--glass-border)] rounded-2xl px-5 py-3 shadow-sm transition-all duration-300 backdrop-blur-md"
-                        valueColor="text-[var(--text-primary)]"
-                        labelColor="text-[var(--text-secondary)]"
-                    />
-                    <MetricCard
-                        label="Avg Holding Time"
-                        value={data.kpi.holdingTime.value}
-                        trend={data.kpi.holdingTime.trend}
-                        trendLabel={data.kpi.holdingTime.trendLabel}
-                        data={data.kpi.holdingTime.data}
-                        color={data.kpi.holdingTime.color}
-                        className="bg-[var(--bg-secondary)] border border-[var(--glass-border)] rounded-2xl px-5 py-3 shadow-sm transition-all duration-300 backdrop-blur-md"
-                        valueColor="text-[var(--text-primary)]"
-                        labelColor="text-[var(--text-secondary)]"
-                    />
-                    <MetricCard
-                        label="Win Rate"
-                        value={data.kpi.winRate.value}
-                        trend={data.kpi.winRate.trend}
-                        data={data.kpi.winRate.data}
-                        color={data.kpi.winRate.color}
-                        className="bg-[var(--bg-secondary)] border border-[var(--glass-border)] rounded-2xl px-5 py-3 shadow-sm transition-all duration-300 backdrop-blur-md"
-                        valueColor="text-[var(--text-primary)]"
-                        labelColor="text-[var(--text-secondary)]"
-                    />
-                </div>
-
-                {/* Middle Section: Heatmap & Charts */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    {/* Heatmap takes 2/3 width */}
-                    <div className="lg:col-span-2">
-                        <SessionHeatmap
-                            data={data.heatmap}
-                            theme={theme}
-                        />
-                    </div>
-
-                    {/* Performance Bar Chart takes 1/3 width */}
-                    <div className="lg:col-span-1">
-                        <PerformanceBarChart
-                            title="Performance Logic"
-                            data={data.performance}
-                            theme={theme}
-                        />
+                    {/* Rim: The Exposed Edge & Controls */}
+                    <div className="flex-1 flex justify-end items-center border-b border-[var(--glass-border)] pb-2 pl-4 pr-1">
+                        <div className="flex bg-[var(--bg-tertiary)]/50 rounded-md p-0.5 border border-[var(--glass-border)]/50 backdrop-blur-sm">
+                            {(['W', 'M', 'Q'] as const).map((p) => (
+                                <button
+                                    key={p}
+                                    onClick={() => setPeriod(p)}
+                                    className={`px-3 py-1 rounded text-[10px] font-semibold transition-all duration-300 ${period === p
+                                        ? 'bg-[var(--bg-primary)] text-[var(--text-primary)] shadow-sm border border-[var(--glass-border)]'
+                                        : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)]'
+                                        }`}
+                                >
+                                    {p === 'W' ? 'Week' : p === 'M' ? 'Month' : 'Quarter'}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
-                {/* Bottom Section: Asset Allocation */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <AssetAllocationChart data={data.assets} theme={theme} />
-                    <div className="bg-[var(--bg-secondary)] border border-[var(--glass-border)] rounded-2xl px-6 py-4 shadow-sm flex items-center justify-center text-[var(--text-muted)] italic">
-                        <p>Additional Metric / Goal tracking placeholder</p>
+                {/* Folder Body: The Content */}
+                <div className="bg-[var(--bg-secondary)]/30 backdrop-blur-xl border border-[var(--glass-border)] rounded-b-xl rounded-tr-xl p-3 shadow-sm">
+                    <div className="space-y-2">
+                        {/* KPI Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-2">
+                            <MetricCard
+                                label="Net Profit"
+                                value={data.kpi.profit.value}
+                                trend={data.kpi.profit.trend}
+                                data={data.kpi.profit.data}
+                                color={data.kpi.profit.color}
+                                className="bg-[var(--bg-primary)]/50 border border-[var(--glass-border)] rounded-xl px-4 py-3 shadow-none transition-all duration-300 hover:border-[var(--glass-border)] hover:bg-[var(--bg-primary)]"
+                                valueColor="text-[var(--text-primary)]"
+                                labelColor="text-[var(--text-secondary)]"
+                            />
+                            <MetricCard
+                                label="Avg Holding Time"
+                                value={data.kpi.holdingTime.value}
+                                trend={data.kpi.holdingTime.trend}
+                                trendLabel={data.kpi.holdingTime.trendLabel}
+                                data={data.kpi.holdingTime.data}
+                                color={data.kpi.holdingTime.color}
+                                className="bg-[var(--bg-primary)]/50 border border-[var(--glass-border)] rounded-xl px-4 py-3 shadow-none transition-all duration-300 hover:border-[var(--glass-border)] hover:bg-[var(--bg-primary)]"
+                                valueColor="text-[var(--text-primary)]"
+                                labelColor="text-[var(--text-secondary)]"
+                            />
+                            <MetricCard
+                                label="Win Rate"
+                                value={data.kpi.winRate.value}
+                                trend={data.kpi.winRate.trend}
+                                data={data.kpi.winRate.data}
+                                color={data.kpi.winRate.color}
+                                className="bg-[var(--bg-primary)]/50 border border-[var(--glass-border)] rounded-xl px-4 py-3 shadow-none transition-all duration-300 hover:border-[var(--glass-border)] hover:bg-[var(--bg-primary)]"
+                                valueColor="text-[var(--text-primary)]"
+                                labelColor="text-[var(--text-secondary)]"
+                            />
+                        </div>
+
+                        {/* Middle Section: Heatmap & Charts */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                            {/* Heatmap takes 2/3 width or 3/4 */}
+                            <div className="lg:col-span-2 xl:col-span-3">
+                                <SessionHeatmap
+                                    data={data.heatmap}
+                                    theme={theme}
+                                />
+                            </div>
+
+                            {/* Performance Bar Chart takes 1/3 width or 1/4 */}
+                            <div className="lg:col-span-1 xl:col-span-1">
+                                <PerformanceBarChart
+                                    title="Performance Logic"
+                                    data={data.performance}
+                                    theme={theme}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Bottom Section: Asset Allocation */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                            <AssetAllocationChart data={data.assets} theme={theme} />
+                            <div className="bg-[var(--bg-primary)]/50 border border-[var(--glass-border)] rounded-xl px-6 py-4 flex items-center justify-center text-[var(--text-muted)] text-sm italic border-dashed">
+                                <p>Additional Metric / Goal tracking placeholder</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-
             </div>
         </div>
     );
