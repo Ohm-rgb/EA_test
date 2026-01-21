@@ -122,3 +122,38 @@ Timeline:
   - 11:10: Added `ThemeToggle` to TopBar with premium animations (Sun/Moon).
   - 11:15: Refactored `HistoryPage` and Analytics components to be fully dynamic using `useTheme()`.
 Notes: System now supports seamless switching between "Dark Glass" and "Light Pastel" modes. All components react instantly to theme changes.
+
+Task: Refining Analytics Dashboard Design
+Status: Completed
+Timeline:
+  - 10:15: Analyzed current styling and chart configuration.
+  - 10:30: Created implementation plan for "Hospital ER" vibe.
+  - 10:45: Updated globals.css with semantic lavender-gray variables.
+  - 11:00: Configured ChartTheme.ts with muted/dusty colors.
+  - 11:15: Implemented purple-based heatmap scale in SessionHeatmap.tsx.
+  - 11:40: Applied "Deep Purple" refinements and structural background colors based on user feedback.
+Notes: Successfully transformed the dashboard from a clean SaaS look to a calm, medical aesthetic suitable for long use. Added specific structural elements to mimic the reference design.
+
+Task: State-Driven Semantic Theme System Refactor
+Status: Completed
+Timeline:
+  - 12:05: Refactored Bot Studio, Control Center, Settings, and Portfolio to remove hardcoded aesthetic colors and use semantic tokens.
+  - 12:10: Identified regression where Settings and Bot Studio cards remained dark in Light Mode.
+  - 12:15: Debugged globals.css and removed hardcoded rgba(30, 30, 30, 0.85) overrides for .glass-card.
+  - 12:20: Debugged src/components/ui/index.tsx and removed inline hardcoded styles for GlassCard, Badge, and Chip, converting them to use CSS classes.
+  - 12:25: Final verification confirmed correct switching between Lavender/White Light Mode and Dark Glass Dark Mode across all pages.
+
+Task: Fix Settings Persistence & Status Bar
+Status: Completed
+Timeline:
+  - 20:30: Fixed backend `get_ai_settings` to return connection status fields.
+  - 20:35: Updated Settings page to reload data immediately after successful AI connection test.
+  - 20:45: Updated TopBar to show real-time "Internet", "Broker", and "AI" status (turning green when connected).
+Notes: Resolved issue where connection status was lost on refresh. Top Bar now reflects the true verified state of the AI connection.
+
+Task: System Data-Flow Documentation
+Status: Completed
+Timeline:
+  - 20:50: Created `docs/data_flow_overview.md` mapping inputs/outputs for AI, Bots, Settings, and Portfolio.
+  - 20:55: Included Mermaid diagram for system architecture.
+Notes: Provides a clear reference for debugging and future development.

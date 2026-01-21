@@ -1,5 +1,8 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import api from '@/lib/api';
+
 interface StatusIndicatorProps {
     status: 'connected' | 'warning' | 'error' | 'disconnected';
     label: string;
@@ -43,6 +46,62 @@ interface TopBarProps {
 }
 
 export default function TopBar({ title, showKillSwitch = false, onKillSwitch }: TopBarProps) {
+    const [internetStatus, setInternetStatus] = useState<'connected' | 'disconnected'>('connected');
+    const [brokerStatus, setBrokerStatus] = useState<'connected' | 'warning' | 'disconnected'>('disconnected');
+    const [aiStatus, setAiStatus] = useState<'connected' | 'warning' | 'error'>('warning');
+
+    useEffect(() => {
+        // 1. Internet Status
+        const updateOnlineStatus = () => {
+            setInternetStatus(navigator.onLine ? 'connected' : 'disconnected');
+        };
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        updateOnlineStatus(); // Initial check
+
+        // 2. Fetch Backend Status
+        const fetchStatus = async () => {
+            try {
+                const [settings, aiSettings] = await Promise.all([
+                    api.getSettings(),
+                    api.getAISettings()
+                ]);
+
+                // Broker Status (Check if MT5 server is configured)
+                if (settings.mt5_server) {
+                    setBrokerStatus('connected'); // Simplified for now since we don't have real MT5 ping
+                } else {
+                    setBrokerStatus('disconnected');
+                }
+
+                // AI Status (Use the verified status from backend)
+                if (aiSettings.external_ai_status === 'connected') {
+                    setAiStatus('connected');
+                } else if (aiSettings.external_ai_status === 'error') {
+                    setAiStatus('error');
+                } else {
+                    // Not tested or not configured
+                    setAiStatus('warning');
+                }
+            } catch (err) {
+                console.error("Failed to fetch system status:", err);
+                setBrokerStatus('disconnected');
+                setAiStatus('warning');
+            }
+        };
+
+        fetchStatus();
+
+        // Poll every 30 seconds
+        const interval = setInterval(fetchStatus, 30000);
+
+        return () => {
+            window.removeEventListener('online', updateOnlineStatus);
+            window.removeEventListener('offline', updateOnlineStatus);
+            clearInterval(interval);
+        };
+    }, []);
+
     const handleKillSwitch = () => {
         if (onKillSwitch) {
             onKillSwitch();
@@ -65,9 +124,12 @@ export default function TopBar({ title, showKillSwitch = false, onKillSwitch }: 
         <header className="flex items-center justify-between px-6 py-4 border-b border-[var(--glass-border)]">
             {/* Status Indicators */}
             <div className="flex items-center gap-6">
-                <StatusIndicator status="connected" label="Internet" />
-                <StatusIndicator status="connected" label="Broker" />
-                <StatusIndicator status="warning" label="AI" />
+                <StatusIndicator status={internetStatus} label="Internet" />
+                <StatusIndicator
+                    status={brokerStatus === 'disconnected' ? 'warning' : brokerStatus}
+                    label="Broker"
+                />
+                <StatusIndicator status={aiStatus} label="AI" />
             </div>
 
             {/* Title */}

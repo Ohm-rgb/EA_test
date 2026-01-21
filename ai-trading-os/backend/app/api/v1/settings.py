@@ -229,7 +229,10 @@ async def get_ai_settings(
         "default_local_model": DEFAULT_LOCAL_MODEL,
         "available_local_models": get_available_local_models(),
         "default_gemini_model": DEFAULT_GEMINI_MODEL,
-        "available_gemini_models": sorted(list(ALLOWED_GEMINI_MODELS))
+        "available_gemini_models": sorted(list(ALLOWED_GEMINI_MODELS)),
+        "external_ai_status": getattr(settings, 'external_ai_status', 'not_tested'),
+        "external_ai_last_checked": settings.external_ai_last_checked.isoformat() if getattr(settings, 'external_ai_last_checked', None) else None,
+        "external_ai_error": getattr(settings, 'external_ai_error', None)
     }
 
 

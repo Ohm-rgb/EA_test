@@ -404,6 +404,8 @@ export default function Settings() {
                                         const res = await api.testAIConnection();
                                         if (res.gemini.status === 'connected') {
                                             setMessage({ type: 'success', text: 'Gemini Connected Successfully! ✅' });
+                                            // Reload settings to update status badge/dot
+                                            loadSettings();
                                         } else if (res.gemini.status === 'error') {
                                             setMessage({ type: 'error', text: `Connection Failed: ${res.gemini.message}` });
                                         } else if (res.gemini.status === 'not_configured') {
