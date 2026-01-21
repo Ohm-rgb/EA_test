@@ -304,16 +304,42 @@ export default function Settings() {
                             <div className="flex items-center gap-2">
                                 <span className="text-[var(--color-info)] text-xl">☁️</span>
                                 <h3 className="text-lg font-semibold">External AI (Gemini)</h3>
+                                {/* Connection Status Dot */}
+                                {aiSettings?.external_ai_status === 'connected' && (
+                                    <span className="w-2 h-2 rounded-full bg-[var(--color-success)] animate-pulse" title="Verified" />
+                                )}
+                                {aiSettings?.external_ai_status === 'error' && (
+                                    <span className="w-2 h-2 rounded-full bg-[var(--color-critical)]" title={aiSettings?.external_ai_error || 'Error'} />
+                                )}
+                                {(!aiSettings?.external_ai_status || aiSettings?.external_ai_status === 'not_tested') && aiSettings?.has_gemini_key && (
+                                    <span className="w-2 h-2 rounded-full bg-gray-400" title="Not Tested" />
+                                )}
                             </div>
                             <div className="flex items-center gap-2">
                                 {settings.primary_ai_provider === 'gemini' && <span className="text-xs text-[var(--color-success)]">Primary</span>}
                                 {aiSettings?.has_gemini_key ? (
-                                    <Badge variant="info">Configured</Badge>
+                                    aiSettings?.external_ai_status === 'connected' ? (
+                                        <Badge variant="success">Verified</Badge>
+                                    ) : aiSettings?.external_ai_status === 'error' ? (
+                                        <Badge variant="danger">Error</Badge>
+                                    ) : (
+                                        <Badge variant="info">Configured</Badge>
+                                    )
                                 ) : (
                                     <Badge variant="warning">Not Configured</Badge>
                                 )}
                             </div>
                         </div>
+
+                        {/* Warning if configured but not verified */}
+                        {aiSettings?.has_gemini_key && aiSettings?.external_ai_status !== 'connected' && (
+                            <div className="text-xs text-[var(--color-warning)] bg-[var(--bg-tertiary)] p-2 rounded mb-2 flex items-center gap-2">
+                                <span>⚠️</span>
+                                <span>{aiSettings?.external_ai_status === 'error'
+                                    ? `Error: ${aiSettings?.external_ai_error || 'Connection failed'}`
+                                    : 'API key saved, but not verified yet. Click "Test AI Connection".'}</span>
+                            </div>
+                        )}
 
                         <div className="space-y-3">
                             <div>

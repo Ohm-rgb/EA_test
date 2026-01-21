@@ -127,6 +127,10 @@ class AISettingsResponse(BaseModel):
     has_openai_key: bool = False
     has_ollama: bool = False
     monthly_token_limit: Optional[int] = None
+    # Connection state
+    external_ai_status: Optional[str] = None  # not_tested, connected, error
+    external_ai_last_checked: Optional[str] = None  # ISO datetime string
+    external_ai_error: Optional[str] = None
     # Available models for dropdowns
     default_local_model: str = DEFAULT_LOCAL_MODEL
     available_local_models: List[str] = []
@@ -154,6 +158,9 @@ def settings_to_response(settings: Settings) -> dict:
         "has_gemini_key": bool(settings.gemini_api_key),
         "has_openai_key": bool(settings.openai_api_key),
         "monthly_token_limit": settings.monthly_token_limit,
+        "external_ai_status": getattr(settings, 'external_ai_status', 'not_tested'),
+        "external_ai_last_checked": settings.external_ai_last_checked.isoformat() if getattr(settings, 'external_ai_last_checked', None) else None,
+        "external_ai_error": getattr(settings, 'external_ai_error', None),
         "mt5_server": settings.mt5_server,
         "mt5_account_type": settings.mt5_account_type,
     }
@@ -360,6 +367,7 @@ async def test_ai_connection(
     if settings and settings.gemini_api_key:
         try:
             from app.services.gemini_client import GeminiClient
+            from datetime import datetime
             # Create temporary client for testing
             client = GeminiClient(api_key=settings.gemini_api_key)
             # Use a lightweight model for the test if possible, or the configured one
@@ -369,8 +377,21 @@ async def test_ai_connection(
             # Try a minimal generation
             await client.generate("Ping", context=None)
             
+            # Persist success status to DB
+            settings.external_ai_status = "connected"
+            settings.external_ai_last_checked = datetime.utcnow()
+            settings.external_ai_error = None
+            db.commit()
+            
             results["gemini"] = {"status": "connected", "message": "Successfully connected to Gemini API"}
         except Exception as e:
+            # Persist error status to DB
+            from datetime import datetime
+            settings.external_ai_status = "error"
+            settings.external_ai_last_checked = datetime.utcnow()
+            settings.external_ai_error = str(e)[:250]  # Truncate to fit column
+            db.commit()
+            
             results["gemini"] = {"status": "error", "message": f"Connection Failed: {str(e)}"}
     else:
         results["gemini"] = {"status": "not_configured", "message": "API key not set"}

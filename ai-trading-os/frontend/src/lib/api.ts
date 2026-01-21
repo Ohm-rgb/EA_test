@@ -261,6 +261,10 @@ export interface AISettings {
     has_openai_key: boolean;
     has_ollama: boolean;
     monthly_token_limit: number;
+    // Connection state
+    external_ai_status?: string;  // not_tested, connected, error
+    external_ai_last_checked?: string | null;  // ISO datetime string
+    external_ai_error?: string | null;
     // Available models from backend
     default_local_model: string;
     available_local_models: string[];

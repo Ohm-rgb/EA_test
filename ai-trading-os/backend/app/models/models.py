@@ -49,6 +49,11 @@ class Settings(Base):
     openai_api_key = Column(String(255), nullable=True)
     monthly_token_limit = Column(Integer, default=100000)
     
+    # External AI Connection State
+    external_ai_status = Column(String(20), default="not_tested")  # not_tested, connected, error
+    external_ai_last_checked = Column(DateTime, nullable=True)
+    external_ai_error = Column(String(255), nullable=True)
+    
     # MT5 Connection
     mt5_server = Column(String(100), nullable=True)
     mt5_login = Column(String(50), nullable=True)

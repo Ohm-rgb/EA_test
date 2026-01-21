@@ -19,7 +19,10 @@ def fix_schema():
         "local_ai_model": "VARCHAR(50) DEFAULT 'qwen3:8b'",
         "external_ai_provider": "VARCHAR(20) DEFAULT 'gemini'",
         "external_ai_model": "VARCHAR(50) DEFAULT 'gemini-2.5-flash'",
-        "primary_ai_provider": "VARCHAR(20) DEFAULT 'ollama'"
+        "primary_ai_provider": "VARCHAR(20) DEFAULT 'ollama'",
+        "external_ai_status": "VARCHAR(20) DEFAULT 'not_tested'",
+        "external_ai_last_checked": "DATETIME",
+        "external_ai_error": "VARCHAR(255)"
     }
     
     try:
