@@ -260,7 +260,7 @@ body {
   backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--glass-border);
   border-radius: 16px;
-  padding: 20px;
+  padding: 12px 20px;
 }
 
 .kpi-card .label {
@@ -384,7 +384,7 @@ body {
   backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--glass-border);
   border-radius: 16px;
-  padding: 20px;
+  padding: 12px 20px;
 }
 
 /* Rule Card (Bot Studio) */

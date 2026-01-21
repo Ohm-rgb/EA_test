@@ -83,18 +83,19 @@ export default function HistoryPage() {
                     }`} />
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto space-y-8">
+            <div className="relative z-10 max-w-7xl mx-auto space-y-4">
 
                 {/* Header - Structural Container */}
-                <div className="bg-[var(--bg-structure)] backdrop-blur-sm rounded-2xl p-6 border border-[var(--glass-border)] shadow-sm flex justify-between items-end transition-colors duration-300">
-                    <div>
-                        <h1 className="text-3xl font-bold text-[var(--text-primary)]">
+                {/* Header - Full-width Section */}
+                <div className="flex justify-between items-center w-full pt-2 pb-1">
+                    <div className="flex items-baseline gap-4">
+                        <h1 className="text-3xl font-bold text-[var(--text-primary)] tracking-tight">
                             Analytics Dashboard
                         </h1>
-                        <p className="text-[var(--text-secondary)] mt-1">Performance insights & trading behavior analysis</p>
+                        <p className="text-[var(--text-secondary)] text-sm font-medium">Performance insights & trading behavior analysis</p>
                     </div>
 
-                    <div className="flex bg-[var(--bg-tertiary)] rounded-lg p-1 border border-[var(--glass-border)] shadow-sm">
+                    <div className="flex bg-[var(--bg-tertiary)] rounded-lg p-1 border border-[var(--glass-border)] shadow-sm shrink-0">
                         {(['W', 'M', 'Q'] as const).map((p) => (
                             <button
                                 key={p}
@@ -111,7 +112,7 @@ export default function HistoryPage() {
                 </div>
 
                 {/* KPI Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <MetricCard
                         label="Net Profit"
                         value={data.kpi.profit.value}
@@ -119,7 +120,7 @@ export default function HistoryPage() {
                         data={data.kpi.profit.data}
                         color={data.kpi.profit.color}
                         // Use semantic container class
-                        className="bg-[var(--bg-secondary)] border border-[var(--glass-border)] rounded-2xl p-5 shadow-sm transition-all duration-300 backdrop-blur-md"
+                        className="bg-[var(--bg-secondary)] border border-[var(--glass-border)] rounded-2xl px-5 py-3 shadow-sm transition-all duration-300 backdrop-blur-md"
                         valueColor="text-[var(--text-primary)]"
                         labelColor="text-[var(--text-secondary)]"
                     />
@@ -130,7 +131,7 @@ export default function HistoryPage() {
                         trendLabel={data.kpi.holdingTime.trendLabel}
                         data={data.kpi.holdingTime.data}
                         color={data.kpi.holdingTime.color}
-                        className="bg-[var(--bg-secondary)] border border-[var(--glass-border)] rounded-2xl p-5 shadow-sm transition-all duration-300 backdrop-blur-md"
+                        className="bg-[var(--bg-secondary)] border border-[var(--glass-border)] rounded-2xl px-5 py-3 shadow-sm transition-all duration-300 backdrop-blur-md"
                         valueColor="text-[var(--text-primary)]"
                         labelColor="text-[var(--text-secondary)]"
                     />
@@ -140,14 +141,14 @@ export default function HistoryPage() {
                         trend={data.kpi.winRate.trend}
                         data={data.kpi.winRate.data}
                         color={data.kpi.winRate.color}
-                        className="bg-[var(--bg-secondary)] border border-[var(--glass-border)] rounded-2xl p-5 shadow-sm transition-all duration-300 backdrop-blur-md"
+                        className="bg-[var(--bg-secondary)] border border-[var(--glass-border)] rounded-2xl px-5 py-3 shadow-sm transition-all duration-300 backdrop-blur-md"
                         valueColor="text-[var(--text-primary)]"
                         labelColor="text-[var(--text-secondary)]"
                     />
                 </div>
 
                 {/* Middle Section: Heatmap & Charts */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     {/* Heatmap takes 2/3 width */}
                     <div className="lg:col-span-2">
                         <SessionHeatmap
@@ -167,9 +168,9 @@ export default function HistoryPage() {
                 </div>
 
                 {/* Bottom Section: Asset Allocation */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <AssetAllocationChart data={data.assets} theme={theme} />
-                    <div className="bg-[var(--bg-secondary)] border border-[var(--glass-border)] rounded-2xl p-6 shadow-sm flex items-center justify-center text-[var(--text-muted)] italic">
+                    <div className="bg-[var(--bg-secondary)] border border-[var(--glass-border)] rounded-2xl px-6 py-4 shadow-sm flex items-center justify-center text-[var(--text-muted)] italic">
                         <p>Additional Metric / Goal tracking placeholder</p>
                     </div>
                 </div>
