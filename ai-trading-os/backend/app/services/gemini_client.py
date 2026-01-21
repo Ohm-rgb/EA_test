@@ -11,10 +11,12 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
+from app.core.ai_models import DEFAULT_GEMINI_MODEL
+
 class GeminiClient:
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key
-        self.model = "gemini-2.5-flash"  # Default
+        self.model = DEFAULT_GEMINI_MODEL
         self.base_url = "https://generativelanguage.googleapis.com/v1beta/models"
 
     def set_api_key(self, key: str):

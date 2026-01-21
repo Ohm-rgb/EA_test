@@ -38,17 +38,17 @@ class AIService:
         target_provider = provider or self.primary_provider
         
         try:
-            if target_provider == "ollama":
-                return await self._try_ollama(prompt, context)
-            elif target_provider == "gemini":
+            # Case 1: Explicitly requesting Gemini -> Direct call
+            if target_provider == "gemini":
                 return await self._try_gemini(prompt, context)
-            else:
-                # Default to Ollama first, then Gemini
-                try:
-                    return await self._try_ollama(prompt, context)
-                except Exception as e:
-                    logger.warning(f"Ollama failed, falling back to Gemini: {e}")
-                    return await self._try_gemini(prompt, context)
+
+            # Case 2: Ollama (Primary) or Unspecified -> Try Local first, then Auto-Failover to Cloud
+            # User Request: "If local system cannot process, send data outside"
+            try:
+                return await self._try_ollama(prompt, context)
+            except Exception as e:
+                logger.warning(f"Local AI (Ollama) failed: {e}. Auto-switching to Cloud (Gemini).")
+                return await self._try_gemini(prompt, context)
                     
         except Exception as e:
             logger.error(f"All AI providers failed: {e}")

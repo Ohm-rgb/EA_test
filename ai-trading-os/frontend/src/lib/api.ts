@@ -132,9 +132,19 @@ class ApiClient {
             body: JSON.stringify(settings),
         });
     }
+
+    async testAIConnection() {
+        return this.request<TestAIResponse>('/api/v1/settings/test-ai', {
+            method: 'POST'
+        });
+    }
 }
 
 // Types
+export interface TestAIResponse {
+    ollama: { status: string; message: string };
+    gemini: { status: string; message: string };
+}
 export interface PortfolioOverview {
     balance: number;
     equity: number;

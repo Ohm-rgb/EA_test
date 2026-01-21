@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { TopBar } from "@/components/layout";
 import { GlassCard, Button, Chip, Badge } from "@/components/ui";
+import { PineScriptImportModal } from "@/components/modals/PineScriptImportModal";
+import { ParsedStrategy } from "@/services/pineScriptService";
 
 interface BotRule {
     id: number;
@@ -43,6 +45,33 @@ export default function BotStudio() {
         { id: 'ema_20', type: 'EMA', period: 20, source: 'Close' },
         { id: 'price', type: 'Price', period: 0, source: 'Real-time' }
     ]);
+
+    // Import Modal State
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
+    const handleStrategyImport = (strategy: ParsedStrategy) => {
+        // Map imported indicators to local state
+        const newIndicators = strategy.indicators.map(ind => ({
+            id: ind.id,
+            type: ind.type,
+            period: ind.period,
+            source: ind.source
+        }));
+
+        // Map imported rules to local state
+        const newRules = strategy.rules.map(rule => ({
+            id: rule.id,
+            indicator: rule.indicator,
+            operator: rule.operator,
+            value: rule.value,
+            action: rule.action,
+            isEnabled: rule.isEnabled
+        }));
+
+        setActiveIndicators(newIndicators);
+        setRules(newRules);
+        setViewMode('logic'); // Switch to logic view to show result
+    };
 
     const addRule = () => {
         const newRule: BotRule = {
@@ -120,6 +149,12 @@ export default function BotStudio() {
                                     <div className="flex items-center gap-2">
                                         <span className="text-xl">⚡</span>
                                         <h3 className="text-lg font-semibold">Visual Logic Builder</h3>
+                                        <button
+                                            onClick={() => setIsImportModalOpen(true)}
+                                            className="ml-2 text-xs bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/20 px-2 py-1 rounded-md hover:bg-[var(--color-info)]/20 transition-all flex items-center gap-1"
+                                        >
+                                            <span className="text-[10px]">📥</span> Pine Script Import
+                                        </button>
                                     </div>
 
                                     {/* View Switcher */}
@@ -144,8 +179,16 @@ export default function BotStudio() {
                                         </button>
                                     </div>
                                 </div>
-                                <Badge variant="info">{viewMode === 'logic' ? 'Natural Language Mode' : 'Configuration Mode'}</Badge>
+                                <div className="flex items-center gap-3">
+                                    <Badge variant="info">{viewMode === 'logic' ? 'Natural Language Mode' : 'Configuration Mode'}</Badge>
+                                </div>
                             </div>
+
+                            <PineScriptImportModal
+                                isOpen={isImportModalOpen}
+                                onClose={() => setIsImportModalOpen(false)}
+                                onImport={handleStrategyImport}
+                            />
 
                             {/* View Content */}
                             <div className="flex-1">

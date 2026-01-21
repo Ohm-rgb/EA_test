@@ -25,6 +25,8 @@ DEFAULT_LOCAL_MODEL = "qwen3:8b"
 # ============================================
 ALLOWED_GEMINI_MODELS: Set[str] = {
     "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
+    "gemini-3-flash",
     "gemini-2.0-flash",
     "gemini-1.5-pro",
 }

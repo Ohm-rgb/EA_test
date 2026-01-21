@@ -56,11 +56,11 @@ export function ChatPanel() {
                 <div className="fixed bottom-24 right-6 w-96 h-[600px] z-40 fade-in">
                     <GlassCard className="h-full flex flex-col overflow-hidden border-emerald-500/30 shadow-2xl backdrop-blur-xl">
                         {/* Header */}
-                        <div className="p-4 border-b border-white/10 bg-black/20 flex justify-between items-center">
+                        <div className="p-4 border-b border-[var(--glass-border)] bg-[var(--bg-secondary)] flex justify-between items-center">
                             <div>
-                                <h3 className="font-semibold text-emerald-400">AI Secretary</h3>
+                                <h3 className="font-semibold text-[var(--color-accent)]">AI Secretary</h3>
                                 <div className="text-xs text-[var(--text-muted)] flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                    <span className="w-2 h-2 rounded-full bg-[var(--color-accent)] animate-pulse" />
                                     Online • {tokenUsage ? `${tokenUsage.today} tokens used today` : 'Ready'}
                                 </div>
                             </div>
@@ -87,9 +87,9 @@ export function ChatPanel() {
                                     className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                                 >
                                     <div
-                                        className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${msg.role === 'user'
-                                            ? 'bg-emerald-500/20 text-emerald-100 rounded-tr-none'
-                                            : 'bg-white/10 text-white rounded-tl-none'
+                                        className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm border ${msg.role === 'user'
+                                            ? 'bg-[var(--color-accent)]/10 text-[var(--text-primary)] border-[var(--color-accent)]/20 rounded-tr-none'
+                                            : 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] border-[var(--glass-border)] rounded-tl-none'
                                             }`}
                                     >
                                         <div className="break-words">{msg.content}</div>
@@ -104,36 +104,36 @@ export function ChatPanel() {
 
                             {sending && (
                                 <div className="flex justify-start">
-                                    <div className="bg-white/10 rounded-2xl rounded-tl-none px-4 py-2 flex items-center gap-1">
-                                        <span className="w-1.5 h-1.5 bg-white/50 rounded-full animate-bounce" />
-                                        <span className="w-1.5 h-1.5 bg-white/50 rounded-full animate-bounce delay-75" />
-                                        <span className="w-1.5 h-1.5 bg-white/50 rounded-full animate-bounce delay-150" />
+                                    <div className="bg-[var(--bg-tertiary)] border border-[var(--glass-border)] rounded-2xl rounded-tl-none px-4 py-2 flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 bg-[var(--text-muted)] rounded-full animate-bounce" />
+                                        <span className="w-1.5 h-1.5 bg-[var(--text-muted)] rounded-full animate-bounce delay-75" />
+                                        <span className="w-1.5 h-1.5 bg-[var(--text-muted)] rounded-full animate-bounce delay-150" />
                                     </div>
                                 </div>
                             )}
 
                             {error && (
-                                <div className="text-center text-red-400 text-xs bg-red-500/10 p-2 rounded">
+                                <div className="text-center text-red-500 text-xs bg-red-500/10 p-2 rounded">
                                     Error: {error}
                                 </div>
                             )}
                         </div>
 
                         {/* Input */}
-                        <form onSubmit={handleSubmit} className="p-4 border-t border-white/10 bg-black/20">
+                        <form onSubmit={handleSubmit} className="p-4 border-t border-[var(--glass-border)] bg-[var(--bg-secondary)]">
                             <div className="relative">
                                 <input
                                     type="text"
                                     value={input}
                                     onChange={(e) => setInput(e.target.value)}
                                     placeholder="Type a message..."
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl pl-4 pr-12 py-3 text-sm focus:outline-none focus:border-emerald-500/50 transition-colors"
+                                    className="w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl pl-4 pr-12 py-3 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-accent)]/50 transition-colors placeholder-[var(--text-muted)]"
                                     disabled={sending}
                                 />
                                 <button
                                     type="submit"
                                     disabled={!input.trim() || sending}
-                                    className="absolute right-2 top-2 p-1.5 bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-400 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="absolute right-2 top-2 p-1.5 bg-[var(--color-accent)]/20 hover:bg-[var(--color-accent)]/40 text-[var(--color-accent)] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     ➤
                                 </button>

@@ -11,9 +11,8 @@ export default function Settings() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [advancedMode, setAdvancedMode] = useState(false);
+    const [testingConnection, setTestingConnection] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-
-    // Fetch settings on load
     useEffect(() => {
         loadSettings();
     }, []);
@@ -367,6 +366,39 @@ export default function Settings() {
                             <div className="text-right text-sm text-[var(--text-muted)]">
                                 Limit: {settings.monthly_token_limit.toLocaleString()}
                             </div>
+
+                            <Button
+                                variant="primary"
+                                className="w-full text-sm transition-all"
+                                disabled={testingConnection}
+                                onClick={async () => {
+                                    setTestingConnection(true);
+                                    setMessage(null);
+                                    try {
+                                        const res = await api.testAIConnection();
+                                        if (res.gemini.status === 'connected') {
+                                            setMessage({ type: 'success', text: 'Gemini Connected Successfully! ✅' });
+                                        } else if (res.gemini.status === 'error') {
+                                            setMessage({ type: 'error', text: `Connection Failed: ${res.gemini.message}` });
+                                        } else if (res.gemini.status === 'not_configured') {
+                                            setMessage({ type: 'error', text: 'Gemini API Key not configured ⚠️' });
+                                        }
+                                    } catch (e) {
+                                        setMessage({ type: 'error', text: 'Network Request Failed ❌' });
+                                    } finally {
+                                        setTestingConnection(false);
+                                    }
+                                }}
+                            >
+                                {testingConnection ? (
+                                    <span className="flex items-center gap-2 justify-center">
+                                        <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></span>
+                                        Testing...
+                                    </span>
+                                ) : (
+                                    "Test AI Connection"
+                                )}
+                            </Button>
                         </div>
                     </GlassCard>
                 </div>

@@ -71,6 +71,9 @@ class SettingsUpdate(BaseModel):
     news_sensitivity: Optional[str] = None
     # Support updating AI settings here too
     primary_ai_provider: Optional[str] = None
+    local_ai_model: Optional[str] = None
+    external_ai_provider: Optional[str] = None
+    external_ai_model: Optional[str] = None
     gemini_api_key: Optional[str] = None
     openai_api_key: Optional[str] = None
     monthly_token_limit: Optional[int] = None
@@ -323,6 +326,12 @@ async def test_mt5_connection(
     }
 
 
+# API Key format validators
+GEMINI_KEY_PATTERN = re.compile(r"^AIza[A-Za-z0-9_-]{30,}$")  # Relaxed validation
+OPENAI_KEY_PATTERN = re.compile(r"^sk-[A-Za-z0-9]{30,}$")    # Relaxed validation
+
+# ... (omitted middle parts) ...
+
 @router.post("/test-ai")
 async def test_ai_connection(
     current_user: dict = Depends(get_current_user),
@@ -346,10 +355,23 @@ async def test_ai_connection(
     except Exception as e:
         results["ollama"] = {"status": "disconnected", "message": str(e)}
     
-    # Test Gemini (check if key is configured in DB)
+    # Test Gemini (Real Connection Test)
     settings = db.query(Settings).first()
     if settings and settings.gemini_api_key:
-        results["gemini"] = {"status": "configured", "message": "API key is set"}
+        try:
+            from app.services.gemini_client import GeminiClient
+            # Create temporary client for testing
+            client = GeminiClient(api_key=settings.gemini_api_key)
+            # Use a lightweight model for the test if possible, or the configured one
+            if settings.external_ai_model:
+                client.model = settings.external_ai_model
+                
+            # Try a minimal generation
+            await client.generate("Ping", context=None)
+            
+            results["gemini"] = {"status": "connected", "message": "Successfully connected to Gemini API"}
+        except Exception as e:
+            results["gemini"] = {"status": "error", "message": f"Connection Failed: {str(e)}"}
     else:
         results["gemini"] = {"status": "not_configured", "message": "API key not set"}
     

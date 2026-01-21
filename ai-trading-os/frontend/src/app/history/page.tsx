@@ -3,7 +3,7 @@
 import { MetricCard } from "@/components/analytics/MetricCard";
 import { SessionHeatmap } from "@/components/analytics/SessionHeatmap";
 import { PerformanceBarChart, AssetAllocationChart } from "@/components/analytics/AnalyticsCharts";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { CHART_THEME } from "@/config/ChartTheme";
 
@@ -61,7 +61,13 @@ const generateData = (theme: 'light' | 'dark') => {
 export default function HistoryPage() {
     const { theme } = useTheme();
     const [period, setPeriod] = useState<'W' | 'M' | 'Q'>('W');
-    const data = generateData(theme);
+    const [data, setData] = useState<ReturnType<typeof generateData> | null>(null);
+
+    useEffect(() => {
+        setData(generateData(theme));
+    }, [theme]);
+
+    if (!data) return null;
 
     // Dynamic semantic classes
     // Note: Instead of passing CSS overrides, we rely on globals.css variables mapping.
