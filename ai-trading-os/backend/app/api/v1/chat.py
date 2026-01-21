@@ -220,3 +220,168 @@ def _generate_mock_response(user_message: str, context_page: Optional[str]) -> s
         return "ผมจะส่งคำขอวิเคราะห์ไปยัง AI ภายนอก รอสักครู่นะครับ..."
     else:
         return f"รับทราบครับ คำถามของคุณเกี่ยวกับ: {user_message[:50]}... ผมจะช่วยตอบในบริบทของหน้า{page_name}"
+
+
+# ============================================================
+# PINE SCRIPT PARSING ENDPOINT (Forces Gemini, Compiler-style)
+# ============================================================
+
+PINE_SCRIPT_SYSTEM_PROMPT = """You are a compiler, not a trader.
+Your only job is to extract structure from Pine Script code into JSON.
+
+## CRITICAL: Handle BOTH Strategy AND Indicator Scripts
+- **Strategy scripts** use: `strategy.entry()`, `strategy.close()`, `strategy.order()`
+- **Indicator scripts** use: `alertcondition()`, `plotshape()`, `bgcolor()` for signals
+
+## Rules
+1. IGNORE syntax errors, comments, plots, visuals, type definitions, and decorations
+2. FOCUS on: indicators being calculated, buy/sell conditions, alert conditions
+3. If logic is incomplete or ambiguous, set status="partial" and add warning
+4. NEVER invent indicators not present in the script
+5. If unsure, prefer null + warning over guessing
+6. Return ONLY valid JSON matching the schema below - no markdown, no explanation
+7. For complex scripts with many features, extract the TOP 3-5 most important trading signals
+
+## Target Schema
+{
+  "schemaVersion": "1.0",
+  "status": "success" | "partial" | "failed",
+  "warning": "Optional warning message",
+  "indicators": [
+    { "id": "unique_id", "type": "RSI|EMA|SMA|MACD|BollingerBands|Price|Volume|ATR|Custom", "period": number, "source": "Close|Open|High|Low" }
+  ],
+  "rules": [
+    {
+      "id": number,
+      "indicator": "Indicator Type or Signal Name",
+      "operator": "crosses_above|crosses_below|greater_than|less_than|equals|signal",
+      "value": number or null,
+      "action": "Buy|Sell|Close Position|Signal",
+      "isEnabled": true
+    }
+  ]
+}
+
+## Extraction Mapping for STRATEGY scripts
+- strategy.entry("Buy", strategy.long) → action: "Buy"
+- strategy.entry("Sell", strategy.short) → action: "Sell"  
+- strategy.close("Buy") → action: "Close Position"
+- if rsi < 30 → { "operator": "less_than", "value": 30 }
+
+## Extraction Mapping for INDICATOR scripts (alertcondition)
+- alertcondition(bullishBOS, 'Bullish BOS') → { "indicator": "Structure", "operator": "signal", "value": null, "action": "Buy" }
+- alertcondition(bearishBOS, 'Bearish BOS') → { "indicator": "Structure", "operator": "signal", "value": null, "action": "Sell" }
+- alertcondition(bullishFVG, 'Bullish FVG') → { "indicator": "FVG", "operator": "signal", "value": null, "action": "Buy" }
+- alertcondition(bearishFVG, 'Bearish FVG') → { "indicator": "FVG", "operator": "signal", "value": null, "action": "Sell" }
+- alertcondition(orderBlock, 'Order Block') → { "indicator": "OrderBlock", "operator": "signal", "value": null, "action": "Signal" }
+
+## Smart Money Concepts Mapping
+- BOS (Break of Structure) Bullish → Buy signal
+- BOS Bearish → Sell signal
+- CHoCH (Change of Character) Bullish → Buy signal  
+- CHoCH Bearish → Sell signal
+- Bullish Order Block → Buy zone signal
+- Bearish Order Block → Sell zone signal
+- Bullish FVG (Fair Value Gap) → Buy signal
+- Bearish FVG → Sell signal
+
+## Defaults (if not specified)
+- RSI period: 14
+- EMA period: 200
+- SMA period: 50
+- ATR period: 14
+- Source: "Close"
+"""
+
+
+class PineScriptRequest(BaseModel):
+    script: str
+
+
+class PineScriptResponse(BaseModel):
+    schemaVersion: str
+    status: str  # success | partial | failed
+    warning: Optional[str] = None
+    indicators: list
+    rules: list
+    raw_ai_response: Optional[str] = None  # Debug mode
+
+
+@router.post("/parse-pinescript", response_model=PineScriptResponse)
+async def parse_pine_script(
+    request: PineScriptRequest,
+    debug: bool = False,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Parse Pine Script and extract trading logic.
+    ALWAYS uses Gemini (cloud) for reliability.
+    """
+    from app.services.ai_service import ai_service
+    import json
+    
+    prompt = f"""Extract trading logic from this Pine Script:
+
+```pinescript
+{request.script}
+```
+
+Return ONLY the JSON object matching the schema. No explanation."""
+
+    try:
+        # Force Gemini for Pine Script parsing (hard rule)
+        ai_response = await ai_service.generate_response(
+            prompt=prompt,
+            context={"system_prompt": PINE_SCRIPT_SYSTEM_PROMPT},
+            provider="gemini"  # FORCED
+        )
+        
+        raw_message = ai_response["message"]
+        
+        # Parse JSON from response
+        clean_message = raw_message.strip()
+        clean_message = clean_message.replace("```json", "").replace("```", "")
+        
+        first_brace = clean_message.find('{')
+        last_brace = clean_message.rfind('}')
+        
+        if first_brace == -1 or last_brace == -1:
+            return PineScriptResponse(
+                schemaVersion="1.0",
+                status="failed",
+                warning="AI did not return valid JSON structure",
+                indicators=[],
+                rules=[],
+                raw_ai_response=raw_message if debug else None
+            )
+        
+        json_string = clean_message[first_brace:last_brace + 1]
+        parsed = json.loads(json_string)
+        
+        return PineScriptResponse(
+            schemaVersion=parsed.get("schemaVersion", "1.0"),
+            status=parsed.get("status", "success"),
+            warning=parsed.get("warning"),
+            indicators=parsed.get("indicators", []),
+            rules=parsed.get("rules", []),
+            raw_ai_response=raw_message if debug else None
+        )
+        
+    except json.JSONDecodeError as e:
+        return PineScriptResponse(
+            schemaVersion="1.0",
+            status="failed",
+            warning=f"JSON parsing error: {str(e)}",
+            indicators=[],
+            rules=[],
+            raw_ai_response=raw_message if debug else None
+        )
+    except Exception as e:
+        return PineScriptResponse(
+            schemaVersion="1.0",
+            status="failed",
+            warning=f"AI processing error: {str(e)}",
+            indicators=[],
+            rules=[]
+        )

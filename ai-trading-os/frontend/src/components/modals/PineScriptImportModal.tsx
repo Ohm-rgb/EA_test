@@ -23,11 +23,18 @@ export function PineScriptImportModal({ isOpen, onClose, onImport }: PineScriptI
         const startTime = Date.now();
 
         try {
-            const strategy = await pineScriptService.parseScript(script);
+            // Enable debug mode to see raw AI response
+            const strategy = await pineScriptService.parseScript(script, true);
 
             // UX delay if too fast
             const elapsed = Date.now() - startTime;
             if (elapsed < 1500) await new Promise(r => setTimeout(r, 1500 - elapsed));
+
+            // Log debug info
+            console.log("🔍 Parse Result:", strategy);
+            if (strategy.rawAiResponse) {
+                console.log("🤖 Raw AI Response:", strategy.rawAiResponse);
+            }
 
             setResult(strategy);
 
@@ -37,12 +44,13 @@ export function PineScriptImportModal({ isOpen, onClose, onImport }: PineScriptI
                 // For now, let's auto-close on success if user clicks "Apply"
             }
         } catch (e) {
+            console.error("❌ Parse Error:", e);
             setResult({
                 schemaVersion: '1.0',
                 indicators: [],
                 rules: [],
                 status: 'failed',
-                warning: 'Unexpected error during analysis.'
+                warning: e instanceof Error ? e.message : 'Unexpected error during analysis.'
             });
         } finally {
             setIsAnalyzing(false);

@@ -90,6 +90,14 @@ class ApiClient {
         return this.request<TokenUsage>('/api/v1/chat/usage');
     }
 
+    // Pine Script Parsing (Forces Gemini Cloud)
+    async parsePineScript(script: string, debug: boolean = false) {
+        return this.request<PineScriptParseResult>(`/api/v1/chat/parse-pinescript?debug=${debug}`, {
+            method: 'POST',
+            body: JSON.stringify({ script }),
+        });
+    }
+
     // Bot endpoints
     async getBots() {
         return this.request<BotProfile[]>('/api/v1/bots/');
@@ -204,6 +212,27 @@ export interface TokenUsage {
     this_month: number;
     monthly_limit: number;
     remaining: number;
+}
+
+export interface PineScriptParseResult {
+    schemaVersion: string;
+    status: 'success' | 'partial' | 'failed';
+    warning?: string;
+    indicators: Array<{
+        id: string;
+        type: string;
+        period: number;
+        source: string;
+    }>;
+    rules: Array<{
+        id: number;
+        indicator: string;
+        operator: string;
+        value: number;
+        action: string;
+        isEnabled: boolean;
+    }>;
+    raw_ai_response?: string;
 }
 
 export interface BotProfile {

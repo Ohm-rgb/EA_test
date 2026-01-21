@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { TopBar } from "@/components/layout";
 import { GlassCard, Button, Chip, Badge } from "@/components/ui";
 import { PineScriptImportModal } from "@/components/modals/PineScriptImportModal";
+import { StrategyPackageCard, StrategyPackageModal } from "@/components/strategy";
 import { ParsedStrategy } from "@/services/pineScriptService";
+import { StrategyPackage, calculatePackageStatus } from "@/types/strategyPackage";
 
 interface BotRule {
     id: number;
@@ -49,6 +51,10 @@ export default function BotStudio() {
     // Import Modal State
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
+    // Strategy Packages (complex indicators as single cards)
+    const [strategyPackages, setStrategyPackages] = useState<StrategyPackage[]>([]);
+    const [configurePackage, setConfigurePackage] = useState<StrategyPackage | null>(null);
+
     const handleStrategyImport = (strategy: ParsedStrategy) => {
         // Map imported indicators to local state
         const newIndicators = strategy.indicators.map(ind => ({
@@ -58,19 +64,44 @@ export default function BotStudio() {
             source: ind.source
         }));
 
-        // Map imported rules to local state
-        const newRules = strategy.rules.map(rule => ({
-            id: rule.id,
-            indicator: rule.indicator,
-            operator: rule.operator,
-            value: rule.value,
-            action: rule.action,
-            isEnabled: rule.isEnabled
-        }));
+        // Check if this is a package (complex indicator)
+        if (strategy.package) {
+            // Add as Strategy Package (single card)
+            setStrategyPackages(prev => [...prev, strategy.package!]);
+            setActiveIndicators(newIndicators.length > 0 ? newIndicators : activeIndicators);
+        } else {
+            // Individual rules (simple strategy)
+            const newRules = strategy.rules.map(rule => ({
+                id: rule.id,
+                indicator: rule.indicator,
+                operator: rule.operator,
+                value: rule.value,
+                action: rule.action,
+                isEnabled: rule.isEnabled
+            }));
+            setActiveIndicators(newIndicators);
+            setRules(newRules);
+        }
+        setViewMode('logic');
+    };
 
-        setActiveIndicators(newIndicators);
-        setRules(newRules);
-        setViewMode('logic'); // Switch to logic view to show result
+    const handlePackageUpdate = (updatedPackage: StrategyPackage) => {
+        setStrategyPackages(prev => prev.map(pkg =>
+            pkg.id === updatedPackage.id ? updatedPackage : pkg
+        ));
+    };
+
+    const handlePackageToggle = (packageId: string, enabled: boolean) => {
+        setStrategyPackages(prev => prev.map(pkg => {
+            if (pkg.id !== packageId) return pkg;
+            const updatedSubRules = pkg.subRules.map(r => ({ ...r, isEnabled: enabled }));
+            return {
+                ...pkg,
+                isEnabled: enabled,
+                subRules: updatedSubRules,
+                status: calculatePackageStatus(updatedSubRules)
+            };
+        }));
     };
 
     const addRule = () => {
@@ -111,8 +142,8 @@ export default function BotStudio() {
                     <button
                         onClick={() => setActiveTab('strategy')}
                         className={`px-6 py-3 rounded-t-xl font-medium text-sm flex items-center gap-2 transition-all duration-200 shadow-sm border-t border-x ${activeTab === 'strategy'
-                                ? 'bg-[var(--bg-secondary)] border-[var(--glass-border)] text-[var(--color-accent)] translate-y-[1px] z-10'
-                                : 'bg-[var(--bg-tertiary)]/50 border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]'
+                            ? 'bg-[var(--bg-secondary)] border-[var(--glass-border)] text-[var(--color-accent)] translate-y-[1px] z-10'
+                            : 'bg-[var(--bg-tertiary)]/50 border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]'
                             }`}
                     >
                         <span className="text-lg">📂</span>
@@ -123,8 +154,8 @@ export default function BotStudio() {
                     <button
                         onClick={() => setActiveTab('backtest')}
                         className={`px-6 py-3 rounded-t-xl font-medium text-sm flex items-center gap-2 transition-all duration-200 shadow-sm border-t border-x ${activeTab === 'backtest'
-                                ? 'bg-[var(--bg-secondary)] border-[var(--glass-border)] text-[var(--color-accent)] translate-y-[1px] z-10'
-                                : 'bg-[var(--bg-tertiary)]/50 border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]'
+                            ? 'bg-[var(--bg-secondary)] border-[var(--glass-border)] text-[var(--color-accent)] translate-y-[1px] z-10'
+                            : 'bg-[var(--bg-tertiary)]/50 border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]'
                             }`}
                     >
                         <span className="text-lg">📊</span>
@@ -233,10 +264,46 @@ export default function BotStudio() {
                                             onImport={handleStrategyImport}
                                         />
 
+                                        {/* Strategy Package Configuration Modal */}
+                                        {configurePackage && (
+                                            <StrategyPackageModal
+                                                isOpen={!!configurePackage}
+                                                package_={configurePackage}
+                                                onClose={() => setConfigurePackage(null)}
+                                                onSave={handlePackageUpdate}
+                                            />
+                                        )}
+
                                         {/* View Content - Scrollable */}
                                         <div className="flex-1 min-h-0 overflow-y-auto pr-2 custom-scrollbar">
                                             {viewMode === 'logic' ? (
                                                 <div className="space-y-4">
+                                                    {/* Strategy Packages Section */}
+                                                    {strategyPackages.length > 0 && (
+                                                        <div className="space-y-3 mb-6">
+                                                            <div className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">
+                                                                Strategy Packages
+                                                            </div>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                {strategyPackages.map(pkg => (
+                                                                    <StrategyPackageCard
+                                                                        key={pkg.id}
+                                                                        package_={pkg}
+                                                                        onConfigure={() => setConfigurePackage(pkg)}
+                                                                        onToggle={(enabled) => handlePackageToggle(pkg.id, enabled)}
+                                                                    />
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Individual Rules Section */}
+                                                    {rules.length > 0 && (
+                                                        <div className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide mb-3">
+                                                            {strategyPackages.length > 0 ? 'Additional Rules' : 'Trading Rules'}
+                                                        </div>
+                                                    )}
+
                                                     {rules.map((rule, index) => (
                                                         <div key={rule.id} className="relative group">
                                                             <div className="logic-row">

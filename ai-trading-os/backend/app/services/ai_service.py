@@ -68,11 +68,36 @@ class AIService:
 
     async def _try_gemini(self, prompt: str, context: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         """Attempt to use Gemini"""
-        # Check if API key is configured
+        # If API key not set, try to load from database
         if not self.gemini.has_api_key():
-            raise ValueError("Gemini API key not configured")
+            self._load_gemini_settings_from_db()
+        
+        # Check again after loading
+        if not self.gemini.has_api_key():
+            raise ValueError("Gemini API key not configured. Please set it in Settings page.")
             
         return await self.gemini.generate(prompt, context)
+
+    def _load_gemini_settings_from_db(self):
+        """Load Gemini API key and model from database settings"""
+        try:
+            from app.core.database import SessionLocal
+            from app.models import Settings
+            
+            db = SessionLocal()
+            try:
+                db_settings = db.query(Settings).first()
+                if db_settings:
+                    if db_settings.gemini_api_key:
+                        self.gemini.set_api_key(db_settings.gemini_api_key)
+                        logger.info("Loaded Gemini API key from database")
+                    if db_settings.external_ai_model:
+                        self.gemini.model = db_settings.external_ai_model
+                        logger.info(f"Using Gemini model: {db_settings.external_ai_model}")
+            finally:
+                db.close()
+        except Exception as e:
+            logger.error(f"Failed to load Gemini settings from DB: {e}")
 
     def update_settings(self, new_settings: Dict[str, Any]):
         """Update service settings at runtime"""
@@ -90,3 +115,4 @@ class AIService:
 
 # Singleton instance
 ai_service = AIService()
+

@@ -69,6 +69,10 @@ class GeminiClient:
 
     def _build_system_content(self, context: Optional[Dict[str, Any]]) -> str:
         """Construct system context string"""
+        # Check for custom system prompt (e.g., Pine Script parsing)
+        if context and context.get("system_prompt"):
+            return context["system_prompt"]
+        
         base_prompt = "You are an AI assistant for an Algorithmic Trading Platform."
         if context:
             page = context.get("context_page", "")
