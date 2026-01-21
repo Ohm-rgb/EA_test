@@ -88,7 +88,7 @@ export default function Settings() {
         <div className="min-h-screen">
             <TopBar title="System Settings" />
 
-            <div className="p-6 fade-in pb-20">
+            <div className="p-2 fade-in pb-8">
                 {/* Message Toast */}
                 {message && (
                     <div className={`fixed top-20 right-6 px-4 py-2 rounded-lg z-50 border ${message.type === 'success' ? 'bg-[var(--bg-tertiary)] border-[var(--color-success)] text-[var(--color-success)]' : 'bg-[var(--bg-tertiary)] border-[var(--color-critical)] text-[var(--color-critical)]'
@@ -117,7 +117,7 @@ export default function Settings() {
                 )}
 
                 {!advancedMode && (
-                    <div className="flex justify-end mb-4">
+                    <div className="flex justify-end mb-1">
                         <div className="flex items-center gap-2">
                             <span className="text-sm text-[var(--text-secondary)]">Advanced Settings</span>
                             <button
@@ -132,18 +132,18 @@ export default function Settings() {
                     style={{
                         display: "grid",
                         gridTemplateColumns: "1.2fr 1fr",
-                        gap: 32,
+                        gap: 10,
                         alignItems: "stretch",
                     }}
                 >
                     {/* Row 1 Left - Trading Guardrails */}
                     <GlassCard>
-                        <div className="flex items-center gap-2 mb-6">
+                        <div className="flex items-center gap-2 mb-2">
                             <span className="text-[var(--color-success)] text-xl">🛡️</span>
                             <h3 className="text-lg font-semibold">Trading Guardrails</h3>
                         </div>
 
-                        <div className="space-y-6">
+                        <div className="space-y-3">
                             {/* Risk Profile */}
                             <div>
                                 <label className="block text-sm text-[var(--text-secondary)] mb-2">Risk Profile</label>
@@ -204,14 +204,14 @@ export default function Settings() {
 
                     {/* Row 1 Right - Integrations */}
                     <GlassCard>
-                        <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
                                 <span className="text-[var(--color-warning)] text-xl">🔌</span>
                                 <h3 className="text-lg font-semibold">Integrations</h3>
                             </div>
                         </div>
 
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                             <div>
                                 <div className="flex justify-between items-center mb-2">
                                     <label className="text-sm font-medium">MT5 Connection</label>
@@ -223,7 +223,7 @@ export default function Settings() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-xs text-[var(--text-secondary)] mb-1">Login ID</label>
                                     <div className="input-field bg-[var(--bg-input)] text-sm">123456789</div>
@@ -242,7 +242,7 @@ export default function Settings() {
 
                     {/* Row 2 Left - AI Engine (Local) */}
                     <GlassCard>
-                        <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
                                 <span className="text-[var(--color-accent)] text-xl">🧠</span>
                                 <h3 className="text-lg font-semibold">AI Engine</h3>
@@ -300,7 +300,7 @@ export default function Settings() {
 
                     {/* Row 2 Right - External AI (Gemini) */}
                     <GlassCard>
-                        <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
                                 <span className="text-[var(--color-info)] text-xl">☁️</span>
                                 <h3 className="text-lg font-semibold">External AI (Gemini)</h3>
@@ -315,7 +315,7 @@ export default function Settings() {
                             </div>
                         </div>
 
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                             <div>
                                 <div className="flex justify-between mb-2">
                                     <label className="block text-sm text-[var(--text-secondary)]">Provider</label>

@@ -1267,7 +1267,7 @@ body {
   border: 1px solid var(--glass-border);
   border-radius: 16px;
   box-shadow: var(--shadow-glow);
-  padding: var(--settings-card-padding);
+  padding: 12px;
 }
 
 .glass-card>*+* {
