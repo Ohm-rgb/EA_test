@@ -9,12 +9,14 @@ export const CHART_THEME = {
         tooltipText: '#fff'
     },
     light: {
-        profit: '#5FAF7A', // Emerald Green (slightly darker for contrast)
-        loss: '#C77777',   // Muted Rose (darker)
-        grid: '#E0E0EF',   // Light Lavender Gray
-        text: '#4A4A4A',   // Charcoal
+        profit: '#6FAF8A', // Dusty Green
+        loss: '#C98B8B',   // Muted Rose
+        grid: '#DADAEA',   // Lavender Grid
+        text: '#4A4A5A',   // Charcoal
         axis: '#A0AEC0',
         tooltipBg: '#fff',
-        tooltipText: '#000'
+        tooltipText: '#000',
+        heatmapLow: '#E8E9F5',
+        heatmapHigh: '#7D82C8'
     }
 };

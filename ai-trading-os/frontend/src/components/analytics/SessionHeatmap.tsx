@@ -15,6 +15,15 @@ interface SessionHeatmapProps {
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+// Purple-based intensity scale for calm analytical tone
+const HEATMAP_SCALE_LIGHT = [
+    '#F1F2FA', // Lowest
+    '#DADCF2',
+    '#BFC3E8',
+    '#9FA5DA',
+    '#7D82C8'  // Highest
+];
+
 export function SessionHeatmap({ data, theme = 'dark' }: SessionHeatmapProps) {
     const isLight = theme === 'light';
     const themeColors = CHART_THEME[theme];
@@ -41,29 +50,29 @@ export function SessionHeatmap({ data, theme = 'dark' }: SessionHeatmapProps) {
         const intensity = Math.min(Math.abs(val) / (heatMapData.max || 1), 1);
 
         // Use colors from centralized config
-        if (val > 0) {
-            // Profit: Extract RGB from Hex is tricky without a helper, 
-            // so we'll use a simplified opacity approach or just the solid color for now
-            // For a proper implementation, we'd need a hexToRgba helper.
-            // Simplified: Use dynamic opacity on the base color.
-            // Hack for now: hardcode the RGB generic base of the theme color
-            return theme === 'light'
-                ? `rgba(122, 136, 201, ${0.2 + intensity * 0.8})`  // Muted Indigo
-                : `rgba(139, 92, 246, ${0.1 + intensity * 0.9})`; // Violet
+        if (theme === 'light') {
+            // Purple-based scale for light mode (Hospital ER Vibe)
+            // Map 0-1 intensity to 0-4 index
+            const scaleIndex = Math.min(Math.floor(intensity * 5), 4);
+            return HEATMAP_SCALE_LIGHT[scaleIndex];
         } else {
-            return theme === 'light'
-                ? `rgba(229, 154, 154, ${0.2 + intensity * 0.8})` // Muted Rose
-                : `rgba(239, 68, 68, ${0.1 + intensity * 0.9})`;  // Red
+            // Dark mode: keep existing logic for now or update if needed
+            if (val > 0) {
+                return `rgba(139, 92, 246, ${0.1 + intensity * 0.9})`; // Violet
+            } else {
+                return `rgba(239, 68, 68, ${0.1 + intensity * 0.9})`;  // Red
+            }
         }
     };
 
-    const containerClass = "bg-[var(--bg-secondary)] border border-[var(--glass-border)] rounded-2xl p-6 shadow-sm";
+    const containerClass = "bg-[var(--bg-secondary)] border border-[var(--glass-border)] rounded-2xl shadow-sm overflow-hidden";
     const textColor = "text-[var(--text-primary)]";
     const mutedColor = "text-[var(--text-muted)]";
 
     return (
         <div className={containerClass}>
-            <div className="flex justify-between items-center mb-6">
+            {/* Structural Header */}
+            <div className="bg-[var(--bg-structure)] px-6 py-4 border-b border-[var(--glass-border)] flex justify-between items-center">
                 <h3 className={`text-lg font-semibold ${textColor}`}>Trading Session Heatmap</h3>
                 <div className="flex space-x-2">
                     <span className={`text-xs ${mutedColor} flex items-center gap-1`}>
@@ -75,7 +84,7 @@ export function SessionHeatmap({ data, theme = 'dark' }: SessionHeatmapProps) {
                 </div>
             </div>
 
-            <div className="w-full overflow-x-auto">
+            <div className="p-6 w-full overflow-x-auto">
                 <div className="min-w-[800px]">
                     {/* Header (Hours) */}
                     <div className="flex mb-2">

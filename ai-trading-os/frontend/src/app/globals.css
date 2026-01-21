@@ -61,47 +61,43 @@
 /* Layer 2: Light Mode (Pastel / Lavender) */
 .light-mode {
   /* Background Colors */
-  --bg-primary: #EAEAF4;
-  /* Lavender Soft Background */
-  --bg-secondary: #F9F9FC;
-  /* Off-white Card/Sidebar */
-  --bg-tertiary: #FFFFFF;
-  /* Pure White */
+  --bg-primary: #E1DFF0;
+  /* Medical Purple (Deep Anchor) */
+  --bg-secondary: #F1F1F8;
+  /* Less White Surface */
+  --bg-tertiary: #FAFAFD;
+  /* Off-White Elevated */
+  --bg-structure: #D6D3EB;
+  /* Structural Purple (Sidebar/Headers) */
 
-  /* Glass Effect (More opaque for light mode) */
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(121, 113, 197, 0.15);
-  /* Lavender Border */
-  --glass-blur: 20px;
+  /* Glass Effect */
+  --glass-bg: rgba(255, 255, 255, 0.65);
+  --glass-border: rgba(121, 113, 197, 0.2);
+  --glass-blur: 24px;
 
   /* Text Colors */
-  --text-primary: #4A4A4A;
-  /* Charcoal */
-  --text-secondary: #71717A;
-  /* Muted Gray */
-  --text-muted: #A1A1AA;
-  /* Light Gray */
+  --text-primary: #3F3F46;
+  --text-secondary: #6B6B7A;
+  --text-muted: #9A9AAD;
 
   /* Accent Colors */
-  --color-accent: #7A88C9;
-  /* Muted Indigo */
-  --color-accent-dim: rgba(122, 136, 201, 0.15);
+  --color-accent: #7B7FDB;
+  --color-accent-dim: #B8B6D9;
 
-  /* Semantic Status (Pastel) */
-  --color-success: #8BCF9E;
-  /* Soft Green */
+  /* Semantic Status */
+  --color-success: #6FAF8A;
+  /* Dusty Green */
   --color-warning: #FCD535;
-  /* Soft Gold */
-  --color-critical: #E59A9A;
+  --color-critical: #C98B8B;
   /* Muted Rose */
-  --color-info: #7A88C9;
-  /* Muted Indigo */
+  --color-info: #7B7FDB;
 
   /* Gradients */
-  --gradient-primary: linear-gradient(135deg, #7A88C9 0%, #7971C5 100%);
+  --gradient-primary: linear-gradient(135deg, #7B7FDB 0%, #7971C5 100%);
+  --gradient-structure: linear-gradient(180deg, #D6D3EB 0%, #E1DFF0 100%);
 
   /* Shadows */
-  --shadow-glow: 0 4px 20px rgba(122, 136, 201, 0.15);
+  --shadow-glow: 0 4px 24px rgba(122, 136, 201, 0.2);
 }
 
 /* Tailwind Theme Extensions */
@@ -618,6 +614,8 @@ body {
   --bg-primary: #0d0d0d;
   --bg-secondary: #1a1a1a;
   --bg-tertiary: #2a2a2a;
+  --bg-structure: #1a1a1a;
+  /* Default to secondary in dark mode */
 
   /* Subtle Blue Accent */
   --accent-blue: #3b82f6;
@@ -632,7 +630,7 @@ body {
 /* Sidebar - Icon Navigation */
 .sidebar {
   width: 60px;
-  background: var(--bg-secondary);
+  background: var(--bg-structure);
   border-right: 1px solid var(--glass-border);
   height: 100vh;
   position: fixed;

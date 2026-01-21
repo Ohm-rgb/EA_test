@@ -79,8 +79,8 @@ export default function HistoryPage() {
 
             <div className="relative z-10 max-w-7xl mx-auto space-y-8">
 
-                {/* Header */}
-                <div className="flex justify-between items-end">
+                {/* Header - Structural Container */}
+                <div className="bg-[var(--bg-structure)] backdrop-blur-sm rounded-2xl p-6 border border-[var(--glass-border)] shadow-sm flex justify-between items-end transition-colors duration-300">
                     <div>
                         <h1 className="text-3xl font-bold text-[var(--text-primary)]">
                             Analytics Dashboard
