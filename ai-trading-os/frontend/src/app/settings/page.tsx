@@ -64,7 +64,7 @@ export default function Settings() {
             <div className="min-h-screen">
                 <TopBar title="System Settings" />
                 <div className="p-6 flex justify-center items-center h-[calc(100vh-64px)]">
-                    <div className="text-emerald-400">Loading settings...</div>
+                    <div className="text-[var(--color-success)]">Loading settings...</div>
                 </div>
             </div>
         );
@@ -75,7 +75,7 @@ export default function Settings() {
             <div className="min-h-screen">
                 <TopBar title="System Settings" />
                 <div className="p-6 flex justify-center items-center h-[calc(100vh-64px)]">
-                    <div className="text-red-400">Failed to load settings. Is the backend running?</div>
+                    <div className="text-[var(--color-critical)]">Failed to load settings. Is the backend running?</div>
                 </div>
             </div>
         );
@@ -92,7 +92,7 @@ export default function Settings() {
             <div className="p-6 fade-in pb-20">
                 {/* Message Toast */}
                 {message && (
-                    <div className={`fixed top-20 right-6 px-4 py-2 rounded-lg z-50 ${message.type === 'success' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                    <div className={`fixed top-20 right-6 px-4 py-2 rounded-lg z-50 border ${message.type === 'success' ? 'bg-[var(--bg-tertiary)] border-[var(--color-success)] text-[var(--color-success)]' : 'bg-[var(--bg-tertiary)] border-[var(--color-critical)] text-[var(--color-critical)]'
                         }`}>
                         {message.text}
                     </div>
@@ -100,10 +100,10 @@ export default function Settings() {
 
                 {/* Advanced Settings Warning */}
                 {advancedMode && (
-                    <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-3">
-                        <span className="text-amber-400 text-xl">⚠️</span>
+                    <div className="mb-6 p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--color-warning)] flex items-center gap-3">
+                        <span className="text-[var(--color-warning)] text-xl">⚠️</span>
                         <div>
-                            <div className="font-medium text-amber-400">Advanced Settings (Beta)</div>
+                            <div className="font-medium text-[var(--color-warning)]">Advanced Settings (Beta)</div>
                             <div className="text-sm text-[var(--text-secondary)]">Improper configuration may impact system stability.</div>
                         </div>
                         <div className="flex-1" />
@@ -140,7 +140,7 @@ export default function Settings() {
                     {/* Row 1 Left - Trading Guardrails */}
                     <GlassCard>
                         <div className="flex items-center gap-2 mb-6">
-                            <span className="text-emerald-400 text-xl">🛡️</span>
+                            <span className="text-[var(--color-success)] text-xl">🛡️</span>
                             <h3 className="text-lg font-semibold">Trading Guardrails</h3>
                         </div>
 
@@ -207,7 +207,7 @@ export default function Settings() {
                     <GlassCard>
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-2">
-                                <span className="text-orange-400 text-xl">🔌</span>
+                                <span className="text-[var(--color-warning)] text-xl">🔌</span>
                                 <h3 className="text-lg font-semibold">Integrations</h3>
                             </div>
                         </div>
@@ -219,7 +219,7 @@ export default function Settings() {
                                     <Badge variant="success">Connected</Badge>
                                 </div>
                                 <label className="block text-xs text-[var(--text-secondary)] mb-1">Server Address</label>
-                                <div className="input-field mb-2 bg-black/20 text-sm">
+                                <div className="input-field mb-2 bg-[var(--bg-input)] text-sm">
                                     {settings.mt5_server || 'Not set'}
                                 </div>
                             </div>
@@ -227,11 +227,11 @@ export default function Settings() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs text-[var(--text-secondary)] mb-1">Login ID</label>
-                                    <div className="input-field bg-black/20 text-sm">123456789</div>
+                                    <div className="input-field bg-[var(--bg-input)] text-sm">123456789</div>
                                 </div>
                                 <div>
                                     <label className="block text-xs text-[var(--text-secondary)] mb-1">Account Type</label>
-                                    <div className="input-field bg-black/20 text-sm">{settings.mt5_account_type}</div>
+                                    <div className="input-field bg-[var(--bg-input)] text-sm">{settings.mt5_account_type}</div>
                                 </div>
                             </div>
 
@@ -245,11 +245,11 @@ export default function Settings() {
                     <GlassCard>
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-2">
-                                <span className="text-purple-400 text-xl">🧠</span>
+                                <span className="text-[var(--color-accent)] text-xl">🧠</span>
                                 <h3 className="text-lg font-semibold">AI Engine</h3>
                             </div>
                             <div className="flex items-center gap-2">
-                                {settings.primary_ai_provider === 'ollama' && <span className="text-xs text-emerald-400">Primary</span>}
+                                {settings.primary_ai_provider === 'ollama' && <span className="text-xs text-[var(--color-success)]">Primary</span>}
                                 {aiSettings?.has_ollama ? (
                                     <Badge variant="success">Connected</Badge>
                                 ) : (
@@ -264,7 +264,7 @@ export default function Settings() {
                                     <label className="block text-sm text-[var(--text-secondary)]">Local AI (Ollama)</label>
                                     <button
                                         onClick={() => handleUpdate({ primary_ai_provider: 'ollama' })}
-                                        className={`text-xs px-2 py-1 rounded ${settings.primary_ai_provider === 'ollama' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 hover:bg-white/10'}`}
+                                        className={`text-xs px-2 py-1 rounded border transition-colors ${settings.primary_ai_provider === 'ollama' ? 'border-[var(--color-success)] text-[var(--color-success)] bg-[var(--bg-tertiary)]' : 'border-transparent bg-[var(--bg-input)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
                                     >
                                         Set as Primary
                                     </button>
@@ -287,7 +287,7 @@ export default function Settings() {
                             <div className="p-3 rounded-lg bg-[var(--bg-tertiary)]">
                                 <div className="flex justify-between text-sm mb-1">
                                     <span className="text-[var(--text-secondary)]">Status</span>
-                                    <span className={aiSettings?.has_ollama ? 'text-emerald-400' : 'text-red-400'}>
+                                    <span className={aiSettings?.has_ollama ? 'text-[var(--color-success)]' : 'text-[var(--color-critical)]'}>
                                         {aiSettings?.has_ollama ? '● Running' : '○ Not Running'}
                                     </span>
                                 </div>
@@ -303,11 +303,11 @@ export default function Settings() {
                     <GlassCard>
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-2">
-                                <span className="text-blue-400 text-xl">☁️</span>
+                                <span className="text-[var(--color-info)] text-xl">☁️</span>
                                 <h3 className="text-lg font-semibold">External AI (Gemini)</h3>
                             </div>
                             <div className="flex items-center gap-2">
-                                {settings.primary_ai_provider === 'gemini' && <span className="text-xs text-emerald-400">Primary</span>}
+                                {settings.primary_ai_provider === 'gemini' && <span className="text-xs text-[var(--color-success)]">Primary</span>}
                                 {aiSettings?.has_gemini_key ? (
                                     <Badge variant="info">Configured</Badge>
                                 ) : (
@@ -322,7 +322,7 @@ export default function Settings() {
                                     <label className="block text-sm text-[var(--text-secondary)]">Provider</label>
                                     <button
                                         onClick={() => handleUpdate({ primary_ai_provider: 'gemini' })}
-                                        className={`text-xs px-2 py-1 rounded ${settings.primary_ai_provider === 'gemini' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 hover:bg-white/10'}`}
+                                        className={`text-xs px-2 py-1 rounded border transition-colors ${settings.primary_ai_provider === 'gemini' ? 'border-[var(--color-success)] text-[var(--color-success)] bg-[var(--bg-tertiary)]' : 'border-transparent bg-[var(--bg-input)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
                                     >
                                         Set as Primary
                                     </button>

@@ -55,10 +55,10 @@ function RecentTrades() {
           {trades.map((trade, i) => (
             <tr key={i}>
               <td>{trade.time}</td>
-              <td className={trade.type === 'BUY' ? 'text-blue' : 'text-red'}>{trade.type}</td>
+              <td className={trade.type === 'BUY' ? 'text-[var(--color-info)]' : 'text-[var(--color-critical)]'}>{trade.type}</td>
               <td>{trade.entry.toFixed(2)}</td>
               <td>{trade.exit.toFixed(2)}</td>
-              <td className={trade.pl >= 0 ? 'text-green' : 'text-red'}>
+              <td className={trade.pl >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-critical)]'}>
                 {trade.pl >= 0 ? '+' : ''}{trade.pl.toFixed(2)}
               </td>
             </tr>
@@ -96,7 +96,7 @@ function ChartArea() {
         <svg viewBox="0 0 400 150" className="chart-svg">
           <polyline
             fill="none"
-            stroke="rgba(59, 130, 246, 0.5)"
+            stroke="var(--color-accent)"
             strokeWidth="2"
             points="0,120 50,100 100,110 150,80 200,90 250,60 300,70 350,40 400,50"
           />
@@ -107,8 +107,8 @@ function ChartArea() {
           />
           <defs>
             <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="rgba(59, 130, 246, 0.3)" />
-              <stop offset="100%" stopColor="rgba(59, 130, 246, 0)" />
+              <stop offset="0%" stopColor="var(--color-accent)" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="var(--color-accent)" stopOpacity="0" />
             </linearGradient>
           </defs>
         </svg>
@@ -143,9 +143,9 @@ function ActiveOrders() {
         <tbody>
           {orders.map((order, i) => (
             <tr key={i}>
-              <td className="text-blue">{order.type}</td>
+              <td className="text-[var(--color-info)]">{order.type}</td>
               <td>{order.entry.toFixed(2)}</td>
-              <td className={order.pl >= 0 ? 'text-green' : 'text-red'}>
+              <td className={order.pl >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-critical)]'}>
                 {order.pl >= 0 ? '+' : ''}${Math.abs(order.pl).toLocaleString()}
               </td>
             </tr>
@@ -247,7 +247,7 @@ function ControlPanel() {
           </div>
           <div className="perf-item">
             <span className="perf-label">CAP P/L</span>
-            <span className="perf-value text-green">+$1,240</span>
+            <span className="perf-value text-[var(--color-success)]">+$1,240</span>
           </div>
         </div>
       </div>

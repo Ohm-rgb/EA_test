@@ -174,7 +174,7 @@ export default function ControlCenter() {
             <div className="p-6 fade-in">
                 {/* Error Banner */}
                 {error && (
-                    <div className="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-400">
+                    <div className="mb-4 p-4 bg-[var(--bg-tertiary)] border border-[var(--color-critical)] rounded-xl text-[var(--color-critical)]">
                         {error}
                     </div>
                 )}
@@ -245,19 +245,19 @@ export default function ControlCenter() {
                                 {bots.map(bot => (
                                     <div
                                         key={bot.id}
-                                        className="flex items-center justify-between p-4 rounded-xl bg-white/5"
+                                        className="flex items-center justify-between p-4 rounded-xl bg-[var(--bg-tertiary)]"
                                     >
                                         <div className="flex items-center gap-3">
                                             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${bot.bot_state === 'running'
-                                                    ? 'bg-gradient-to-br from-emerald-500 to-teal-500'
-                                                    : bot.bot_state === 'paused'
-                                                        ? 'bg-gradient-to-br from-amber-500 to-orange-500'
-                                                        : 'bg-gradient-to-br from-gray-500 to-gray-600'
+                                                ? 'bg-[var(--color-success)] text-white'
+                                                : bot.bot_state === 'paused'
+                                                    ? 'bg-[var(--color-warning)] text-white'
+                                                    : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
                                                 }`}>
                                                 🤖
                                             </div>
                                             <div>
-                                                <div className="font-medium">{bot.name}</div>
+                                                <div className="font-medium text-[var(--text-primary)]">{bot.name}</div>
                                                 <div className="text-sm text-[var(--text-secondary)]">
                                                     {bot.personality} • {bot.primary_timeframe}
                                                 </div>
@@ -275,11 +275,11 @@ export default function ControlCenter() {
                                                         key={action}
                                                         onClick={() => controlBot(bot.id, action)}
                                                         disabled={!!actionLoading[bot.id] || isDebounced(bot.id)}
-                                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all
+                                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all border
                                                             ${actionLoading[bot.id] === action ? 'opacity-50' : ''}
-                                                            ${action === 'start' ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30' : ''}
-                                                            ${action === 'pause' ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30' : ''}
-                                                            ${action === 'stop' ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' : ''}
+                                                            ${action === 'start' ? 'border-[var(--color-success)] text-[var(--color-success)] hover:bg-[var(--color-success)] hover:text-white' : ''}
+                                                            ${action === 'pause' ? 'border-[var(--color-warning)] text-[var(--color-warning)] hover:bg-[var(--color-warning)] hover:text-white' : ''}
+                                                            ${action === 'stop' ? 'border-[var(--color-critical)] text-[var(--color-critical)] hover:bg-[var(--color-critical)] hover:text-white' : ''}
                                                         `}
                                                     >
                                                         {actionLoading[bot.id] === action ? '...' : action.charAt(0).toUpperCase() + action.slice(1)}
@@ -302,25 +302,25 @@ export default function ControlCenter() {
                 <div className="mt-6 grid grid-cols-4 gap-4">
                     <GlassCard className="p-4" hover>
                         <div className="text-sm text-[var(--text-secondary)]">Active Bots</div>
-                        <div className="text-2xl font-bold mt-1 text-emerald-400">
+                        <div className="text-2xl font-bold mt-1 text-[var(--color-success)]">
                             {bots.filter(b => b.bot_state === 'running').length}
                         </div>
                     </GlassCard>
                     <GlassCard className="p-4" hover>
                         <div className="text-sm text-[var(--text-secondary)]">Paused Bots</div>
-                        <div className="text-2xl font-bold mt-1 text-amber-400">
+                        <div className="text-2xl font-bold mt-1 text-[var(--color-warning)]">
                             {bots.filter(b => b.bot_state === 'paused').length}
                         </div>
                     </GlassCard>
                     <GlassCard className="p-4" hover>
                         <div className="text-sm text-[var(--text-secondary)]">Stopped Bots</div>
-                        <div className="text-2xl font-bold mt-1 text-red-400">
+                        <div className="text-2xl font-bold mt-1 text-[var(--color-critical)]">
                             {bots.filter(b => b.bot_state === 'stopped').length}
                         </div>
                     </GlassCard>
                     <GlassCard className="p-4" hover>
                         <div className="text-sm text-[var(--text-secondary)]">Last Refresh</div>
-                        <div className="text-2xl font-bold mt-1">
+                        <div className="text-2xl font-bold mt-1 text-[var(--text-primary)]">
                             {new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
                         </div>
                     </GlassCard>

@@ -234,7 +234,7 @@ export default function BotStudio() {
                                                         />
                                                         <button
                                                             onClick={() => removeRule(rule.id)}
-                                                            className="p-2 text-[var(--text-muted)] hover:text-red-400"
+                                                            className="p-2 text-[var(--text-muted)] hover:text-[var(--color-critical)]"
                                                         >
                                                             ✕
                                                         </button>
@@ -245,9 +245,9 @@ export default function BotStudio() {
 
                                         <button
                                             onClick={addRule}
-                                            className="w-full py-4 border-2 border-dashed border-[var(--glass-border)] rounded-xl text-[var(--text-secondary)] hover:border-emerald-500 hover:text-emerald-400 transition-all flex items-center justify-center gap-2 group"
+                                            className="w-full py-4 border-2 border-dashed border-[var(--glass-border)] rounded-xl text-[var(--text-secondary)] hover:border-[var(--color-success)] hover:text-[var(--color-success)] transition-all flex items-center justify-center gap-2 group"
                                         >
-                                            <span className="bg-[var(--glass-bg)] w-8 h-8 rounded-full flex items-center justify-center border border-[var(--glass-border)] group-hover:border-emerald-500 transition-colors">+</span>
+                                            <span className="bg-[var(--glass-bg)] w-8 h-8 rounded-full flex items-center justify-center border border-[var(--glass-border)] group-hover:border-[var(--color-success)] transition-colors">+</span>
                                             <span>Add Logic Block</span>
                                         </button>
                                     </div>
@@ -256,10 +256,10 @@ export default function BotStudio() {
                                     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                         <div className="grid grid-cols-2 gap-4">
                                             {activeIndicators.map((ind) => (
-                                                <div key={ind.id} className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--glass-border)] hover:border-purple-500/50 transition-colors group relative">
+                                                <div key={ind.id} className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--glass-border)] hover:border-[var(--color-accent)]/50 transition-colors group relative">
                                                     <div className="flex justify-between items-start mb-2">
                                                         <div className="flex items-center gap-2">
-                                                            <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400 font-bold text-xs">
+                                                            <div className="w-8 h-8 rounded-lg bg-[var(--bg-secondary)] flex items-center justify-center text-[var(--color-accent)] font-bold text-xs border border-[var(--glass-border)]">
                                                                 {ind.type.substring(0, 3)}
                                                             </div>
                                                             <div>
@@ -267,7 +267,7 @@ export default function BotStudio() {
                                                                 <span className="text-xs text-[var(--text-muted)]">Source: {ind.source}</span>
                                                             </div>
                                                         </div>
-                                                        <button className="text-[var(--text-muted)] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                                                        <button className="text-[var(--text-muted)] hover:text-[var(--color-critical)] opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
                                                     </div>
 
                                                     {ind.period > 0 && (
@@ -280,7 +280,7 @@ export default function BotStudio() {
                                                                     const val = Number(e.target.value);
                                                                     setActiveIndicators(activeIndicators.map(i => i.id === ind.id ? { ...i, period: val } : i));
                                                                 }}
-                                                                className="w-full bg-black/20 border border-[var(--glass-border)] rounded px-2 py-1 text-sm mt-1 focus:border-purple-500 outline-none transition-colors"
+                                                                className="w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded px-2 py-1 text-sm mt-1 focus:border-[var(--color-accent)] outline-none transition-colors"
                                                             />
                                                         </div>
                                                     )}
@@ -288,7 +288,7 @@ export default function BotStudio() {
                                             ))}
 
                                             {/* Add New Indicator Card */}
-                                            <button className="p-4 rounded-xl border-2 border-dashed border-[var(--glass-border)] flex flex-col items-center justify-center gap-2 text-[var(--text-secondary)] hover:border-purple-500 hover:text-purple-400 transition-all min-h-[100px]">
+                                            <button className="p-4 rounded-xl border-2 border-dashed border-[var(--glass-border)] flex flex-col items-center justify-center gap-2 text-[var(--text-secondary)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-all min-h-[100px]">
                                                 <span className="text-2xl">+</span>
                                                 <span className="text-sm font-medium">Add Indicator</span>
                                             </button>
@@ -302,7 +302,7 @@ export default function BotStudio() {
                     {/* Risk Settings */}
                     <div>
                         <GlassCard className="p-6">
-                            <h3 className="text-lg font-semibold mb-4 text-amber-400">Risk Settings</h3>
+                            <h3 className="text-lg font-semibold mb-4 text-[var(--color-warning)]">Risk Settings</h3>
 
                             <div className="space-y-6">
                                 {/* Risk per trade */}
