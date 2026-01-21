@@ -34,6 +34,8 @@ export function StatusIndicator({ status, label }: StatusIndicatorProps) {
     );
 }
 
+import { ThemeToggle } from "./ThemeToggle";
+
 interface TopBarProps {
     title: string;
     showKillSwitch?: boolean;
@@ -73,6 +75,8 @@ export default function TopBar({ title, showKillSwitch = false, onKillSwitch }: 
 
             {/* Actions */}
             <div className="flex items-center gap-4">
+                <ThemeToggle />
+
                 {showKillSwitch && (
                     <button
                         className="kill-switch"

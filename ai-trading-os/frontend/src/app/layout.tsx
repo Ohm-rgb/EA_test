@@ -14,6 +14,8 @@ export const metadata: Metadata = {
   description: "AI-Driven Trading & Portfolio Management System",
 };
 
+import { ThemeProvider } from "@/context/ThemeContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -22,18 +24,20 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} antialiased`}>
-        <div className="flex min-h-screen">
-          {/* Sidebar */}
-          <Sidebar />
+        <ThemeProvider>
+          <div className="flex min-h-screen">
+            {/* Sidebar */}
+            <Sidebar />
 
-          {/* Main Content */}
-          <main className="flex-1 ml-[80px]">
-            {children}
-          </main>
+            {/* Main Content */}
+            <main className="flex-1 ml-[80px]">
+              {children}
+            </main>
 
-          {/* Chat Panel */}
-          <ChatPanel />
-        </div>
+            {/* Chat Panel */}
+            <ChatPanel />
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -80,3 +80,45 @@ Timeline:
   - 21:20: Fixed Dashboard compression issue (double padding).
   - 21:20: Removed redundant `padding-left: 76px` from `.dashboard-container` in globals.css.
 Notes: Resolved layout conflicts. Sidebar now properly pushes content, and Dashboard utilizes full available width without indentation artifacts.
+
+Task: Bot Studio UI Implementation
+Status: Completed
+Timeline:
+  - 21:40: Implemented Visual Logic Builder (Apple Shortcuts style) with interactive colored blocks.
+  - 22:00: Added Indicator Management View with state-based tab switching.
+  - 22:15: Refactored Rule Builder to use dynamic active indicators.
+  - 22:30: Code committed and pushed to remote.
+
+Task: History / Analytics Dashboard Implementation
+Status: Completed
+Timeline:
+  - 09:30: Designed dashboard based on "Hospital ER" concept.
+  - 09:45: Created reusable components: MetricCard, SessionHeatmap, AnalyticsCharts.
+  - 10:00: Implemented History page with mock data for visual verification.
+  - 10:15: Resolved build errors (TypeScript/Recharts) and verified layout.
+
+Task: History Dashboard Visual Refinement (Purple Theme)
+Status: Completed
+Timeline:
+  - 10:20: Updated History Page layout to use Purple/Violet background gradients.
+  - 10:25: Adjusted Session Heatmap to use Violet scale instead of Emerald.
+  - 10:28: Updated Performance Bar Chart to use Violet for positive values.
+Notes: Transformation to "Dark Purple" theme completed. Matches the hue of the reference image while maintaining the "Dark Glass" aesthetic of the application.
+
+Task: Theme Adjustment (Soft Pastel / Lavender)
+Status: Completed
+Timeline:
+  - 10:40: Refactored History Dashboard to use "Soft Pastel" theme (Lavender/Off-white) based on user feedback.
+  - 10:45: Updated globals.css with new pastel color variables.
+  - 10:50: Modified Charts & Heatmap to support Light Mode logic with muted pastel colors.
+Notes: Dashboard now reflects the "Medical/Trustworthy" mood with soft lavender tones and muted data visualization colors.
+
+Task: Global Theme System Implementation
+Status: Completed
+Timeline:
+  - 10:55: Created `ThemeContext` for managing Dark/Light states with system preference support.
+  - 11:00: Refactored `globals.css` into a Layered Architecture (Semantic Tokens -> Theme Values).
+  - 11:05: Implemented `ChartTheme.ts` centralized config for JS-driven chart colors.
+  - 11:10: Added `ThemeToggle` to TopBar with premium animations (Sun/Moon).
+  - 11:15: Refactored `HistoryPage` and Analytics components to be fully dynamic using `useTheme()`.
+Notes: System now supports seamless switching between "Dark Glass" and "Light Pastel" modes. All components react instantly to theme changes.
