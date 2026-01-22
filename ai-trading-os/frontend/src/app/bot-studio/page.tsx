@@ -68,11 +68,18 @@ export default function BotStudio() {
 
         // Check if this is a package (complex indicator)
         if (strategy.package) {
-            // Add as Strategy Package (single card)
-            setStrategyPackages(prev => [...prev, strategy.package!]);
+            // CONTROL-FIRST: Create as Draft - must be configured & activated in Industrial Control
+            const draftPackage: StrategyPackage = {
+                ...strategy.package,
+                status: 'draft'  // NOT visible in Strategy Configuration yet
+            };
+            setStrategyPackages(prev => [...prev, draftPackage]);
             setActiveIndicators(newIndicators.length > 0 ? newIndicators : activeIndicators);
+
+            // Switch to Industrial Control tab to configure & activate
+            setActiveTab('backtest');
         } else {
-            // Individual rules (simple strategy)
+            // Individual rules (simple strategy) - still added directly
             const newRules = strategy.rules.map(rule => ({
                 id: rule.id,
                 indicator: rule.indicator,
@@ -83,9 +90,13 @@ export default function BotStudio() {
             }));
             setActiveIndicators(newIndicators);
             setRules(newRules);
+            setViewMode('logic');
         }
-        setViewMode('logic');
     };
+
+    // CONTROL-FIRST: Only show Active packages in Strategy Configuration
+    // Draft/Ready/Disabled packages must be activated in Industrial Control first
+    const visiblePackages = strategyPackages.filter(pkg => pkg.status === 'active');
 
     const handlePackageUpdate = (updatedPackage: StrategyPackage) => {
         setStrategyPackages(prev => prev.map(pkg =>
@@ -96,15 +107,27 @@ export default function BotStudio() {
     const handlePackageToggle = (packageId: string, enabled: boolean) => {
         setStrategyPackages(prev => prev.map(pkg => {
             if (pkg.id !== packageId) return pkg;
+
+            // Hard Guard: Cannot enable a package that is not active
+            if (enabled && pkg.status !== 'active' && pkg.status !== 'partial') {
+                // Throwing error or just preventing the toggle
+                console.error('Security Guard: Cannot enable non-active package', pkg.id);
+                return pkg;
+            }
+
             const updatedSubRules = pkg.subRules.map(r => ({ ...r, isEnabled: enabled }));
             return {
                 ...pkg,
-                isEnabled: enabled,
                 subRules: updatedSubRules,
-                status: calculatePackageStatus(updatedSubRules)
+                isEnabled: enabled,
+                // Status remains active if we are just toggling visibility, 
+                // but if all subrules are off, status logic might change. 
+                // For now we trust the Industrial Control status as the source of truth for 'active'/'draft'
+                // and this toggle just controls 'isEnabled' for the bot execution.
             };
         }));
     };
+
 
     const addRule = () => {
         const newRule: BotRule = {
@@ -139,11 +162,11 @@ export default function BotStudio() {
             <div className="flex-1 flex flex-col min-h-0 w-full animate-in fade-in duration-500">
 
                 {/* Tab Rail - Sits at the top of the workspace */}
-                <div className="flex-none flex items-end px-6 pt-4 gap-2">
+                <div className="flex-none flex items-end px-6 pt-0 gap-2">
                     {/* Tab 1: Strategy Configuration (Active) */}
                     <button
                         onClick={() => setActiveTab('strategy')}
-                        className={`px-6 py-3 rounded-t-xl font-medium text-sm flex items-center gap-2 transition-all duration-200 shadow-sm border-t border-x ${activeTab === 'strategy'
+                        className={`px-5 py-1.5 rounded-t-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 shadow-sm border-t border-x ${activeTab === 'strategy'
                             ? 'bg-[var(--bg-secondary)] border-[var(--glass-border)] text-[var(--color-accent)] translate-y-[1px] z-10'
                             : 'bg-[var(--bg-tertiary)]/50 border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]'
                             }`}
@@ -155,13 +178,13 @@ export default function BotStudio() {
                     {/* Tab 2: Backtesting (Inactive/Demo) */}
                     <button
                         onClick={() => setActiveTab('backtest')}
-                        className={`px-6 py-3 rounded-t-xl font-medium text-sm flex items-center gap-2 transition-all duration-200 shadow-sm border-t border-x ${activeTab === 'backtest'
+                        className={`px-5 py-1.5 rounded-t-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 shadow-sm border-t border-x ${activeTab === 'backtest'
                             ? 'bg-[var(--bg-secondary)] border-[var(--glass-border)] text-[var(--color-accent)] translate-y-[1px] z-10'
                             : 'bg-[var(--bg-tertiary)]/50 border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]'
                             }`}
                     >
-                        <span className="text-lg">📊</span>
-                        Backtesting & Results
+                        <span className="text-lg">🏭</span>
+                        Industrial Control
                     </button>
 
                     <div className="flex-1 border-b border-[var(--glass-border)]"></div>
@@ -225,12 +248,6 @@ export default function BotStudio() {
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-xl">⚡</span>
                                                     <h3 className="text-lg font-semibold">Visual Logic Builder</h3>
-                                                    <button
-                                                        onClick={() => setIsImportModalOpen(true)}
-                                                        className="ml-2 text-xs bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/20 px-2 py-1 rounded-md hover:bg-[var(--color-info)]/20 transition-all flex items-center gap-1"
-                                                    >
-                                                        <span className="text-[10px]">📥</span> Pine Script Import
-                                                    </button>
                                                 </div>
 
                                                 {/* View Switcher */}
@@ -280,14 +297,19 @@ export default function BotStudio() {
                                         <div className="flex-1 min-h-0 overflow-y-auto pr-2 custom-scrollbar">
                                             {viewMode === 'logic' ? (
                                                 <div className="space-y-4">
-                                                    {/* Strategy Packages Section */}
-                                                    {strategyPackages.length > 0 && (
+                                                    {/* Strategy Packages Section - Only Active packages visible */}
+                                                    {visiblePackages.length > 0 && (
                                                         <div className="space-y-3 mb-6">
-                                                            <div className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">
-                                                                Strategy Packages
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">
+                                                                    Strategy Packages
+                                                                </div>
+                                                                <span className="text-[9px] text-[var(--text-muted)] flex items-center gap-1">
+                                                                    🏭 Controlled by Industrial Control
+                                                                </span>
                                                             </div>
                                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                {strategyPackages.map(pkg => (
+                                                                {visiblePackages.map(pkg => (
                                                                     <StrategyPackageCard
                                                                         key={pkg.id}
                                                                         package_={pkg}
@@ -302,7 +324,7 @@ export default function BotStudio() {
                                                     {/* Individual Rules Section */}
                                                     {rules.length > 0 && (
                                                         <div className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide mb-3">
-                                                            {strategyPackages.length > 0 ? 'Additional Rules' : 'Trading Rules'}
+                                                            {visiblePackages.length > 0 ? 'Additional Rules' : 'Trading Rules'}
                                                         </div>
                                                     )}
 
@@ -559,10 +581,17 @@ export default function BotStudio() {
                                 console.log('Configure indicator:', indicator.name);
                                 // TODO: Open indicator configuration modal
                             }}
+                            onImportIndicator={() => setIsImportModalOpen(true)}
                         />
                     )}
                 </div>
             </div>
+
+            <PineScriptImportModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                onImport={handleStrategyImport}
+            />
         </div>
     );
 }

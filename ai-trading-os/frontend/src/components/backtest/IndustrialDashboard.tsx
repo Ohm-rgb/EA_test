@@ -1,13 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { StrategyPackage } from '@/types/strategyPackage';
 import {
     ManagedIndicator,
     IndicatorStatus,
     BacktestResult,
+    TradeDistribution,
+    IndicatorDistributionData,
     generateMockBacktestResult,
-    generateMockManagedIndicators
+    generateMockManagedIndicators,
+    generateIndicatorDistributions
 } from '@/types/backtestTypes';
 import { BacktestSummaryPanel } from './BacktestSummaryPanel';
 import { EquityCurveChart } from './EquityCurveChart';
@@ -17,18 +20,21 @@ import { TradeDistributionChart } from './TradeDistributionChart';
 interface IndustrialDashboardProps {
     strategyPackages: StrategyPackage[];
     onIndicatorConfigure?: (indicator: ManagedIndicator) => void;
+    onImportIndicator?: () => void;  // Opens Pine Script Import modal
 }
 
 /**
  * Industrial Dashboard - Post-conversion control layer
  * Decision console for Backtesting & Indicator Management
  * 
+ * @responsibility Import → Configure → Activate indicators
+ * @gate Only Active indicators visible in Strategy Configuration
  * @important No live execution from this page
- * @important Configuration & binding only
  */
 export function IndustrialDashboard({
     strategyPackages,
-    onIndicatorConfigure
+    onIndicatorConfigure,
+    onImportIndicator
 }: IndustrialDashboardProps) {
     // Phase 1: Mock data (backend-ready interfaces)
     const [backtestResult] = useState<BacktestResult>(() =>
@@ -38,6 +44,87 @@ export function IndustrialDashboard({
     const [managedIndicators, setManagedIndicators] = useState<ManagedIndicator[]>(() =>
         generateMockManagedIndicators()
     );
+
+    // Per-indicator distribution data (generated once)
+    const [indicatorDistributions] = useState<IndicatorDistributionData[]>(() =>
+        generateIndicatorDistributions(
+            generateMockManagedIndicators().map(ind => ({ id: ind.id, name: ind.name }))
+        )
+    );
+
+    // Get active indicators
+    const activeIndicators = useMemo(() =>
+        managedIndicators.filter(ind => ind.status === 'active'),
+        [managedIndicators]
+    );
+
+    // Filter distributions by active indicators
+    const filteredDistributions = useMemo(() => {
+        const activeIds = activeIndicators.map(ind => ind.id);
+
+        if (activeIds.length === 0) {
+            // No active indicators - show all data (fallback)
+            return {
+                dayOfWeek: backtestResult.dayOfWeekDistribution,
+                hourOfDay: backtestResult.hourOfDayDistribution,
+                sourceLabel: 'All Indicators'
+            };
+        }
+
+        // Filter to only active indicators
+        const activeDistributions = indicatorDistributions.filter(
+            d => activeIds.includes(d.indicatorId)
+        );
+
+        if (activeDistributions.length === 0) {
+            return {
+                dayOfWeek: backtestResult.dayOfWeekDistribution,
+                hourOfDay: backtestResult.hourOfDayDistribution,
+                sourceLabel: 'All Indicators'
+            };
+        }
+
+        // Aggregate distributions from active indicators
+        const aggregateDayOfWeek: Record<string, { count: number; winSum: number }> = {};
+        const aggregateHourOfDay: Record<string, { count: number; winSum: number }> = {};
+
+        activeDistributions.forEach(dist => {
+            dist.dayOfWeekDistribution.forEach(d => {
+                if (!aggregateDayOfWeek[d.label]) {
+                    aggregateDayOfWeek[d.label] = { count: 0, winSum: 0 };
+                }
+                aggregateDayOfWeek[d.label].count += d.count;
+                aggregateDayOfWeek[d.label].winSum += d.winRate * d.count;
+            });
+
+            dist.hourOfDayDistribution.forEach(d => {
+                if (!aggregateHourOfDay[d.label]) {
+                    aggregateHourOfDay[d.label] = { count: 0, winSum: 0 };
+                }
+                aggregateHourOfDay[d.label].count += d.count;
+                aggregateHourOfDay[d.label].winSum += d.winRate * d.count;
+            });
+        });
+
+        const dayOfWeek: TradeDistribution[] = Object.entries(aggregateDayOfWeek).map(([label, data]) => ({
+            label,
+            count: data.count,
+            winRate: data.count > 0 ? Math.round((data.winSum / data.count) * 10) / 10 : 0
+        }));
+
+        const hourOfDay: TradeDistribution[] = Object.entries(aggregateHourOfDay).map(([label, data]) => ({
+            label,
+            count: data.count,
+            winRate: data.count > 0 ? Math.round((data.winSum / data.count) * 10) / 10 : 0
+        }));
+
+        // Build source label
+        const sourceLabel = activeIndicators.length === 1
+            ? activeIndicators[0].name
+            : `${activeIndicators.length} Active Indicators`;
+
+        return { dayOfWeek, hourOfDay, sourceLabel };
+    }, [activeIndicators, indicatorDistributions, backtestResult]);
 
     // Handle indicator status change (explicit user action only)
     const handleStatusChange = (indicatorId: string, newStatus: IndicatorStatus) => {
@@ -61,38 +148,15 @@ export function IndustrialDashboard({
     };
 
     return (
-        <div className="h-full flex flex-col gap-4 p-6 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-2 duration-300">
-            {/* Dashboard Header */}
-            <div className="flex-none flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <span className="text-2xl">🏭</span>
-                    <div>
-                        <h2 className="text-lg font-bold text-[var(--text-primary)]">
-                            Industrial Control Dashboard
-                        </h2>
-                        <p className="text-xs text-[var(--text-muted)]">
-                            Post-conversion analysis & indicator management
-                        </p>
-                    </div>
-                </div>
-                <div className="flex items-center gap-3">
-                    {/* Strategy Packages Count */}
-                    {strategyPackages.length > 0 && (
-                        <div className="px-3 py-1.5 rounded bg-[var(--bg-tertiary)] border border-[var(--glass-border)]">
-                            <span className="text-xs text-[var(--text-muted)]">Packages: </span>
-                            <span className="text-sm font-bold text-[var(--color-accent)]">
-                                {strategyPackages.length}
-                            </span>
-                        </div>
-                    )}
-                    {/* Active Indicators Count */}
-                    <div className="px-3 py-1.5 rounded bg-[var(--bg-tertiary)] border border-[var(--glass-border)]">
-                        <span className="text-xs text-[var(--text-muted)]">Active: </span>
-                        <span className="text-sm font-bold text-[var(--color-success)]">
-                            {managedIndicators.filter(i => i.status === 'active').length}/{managedIndicators.length}
-                        </span>
-                    </div>
-                </div>
+        <div className="h-full flex flex-col gap-4 p-6 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-2 duration-300 relative">
+            {/* Corner Status Badge - System Indicator */}
+            <div className="absolute top-2 right-3 flex items-center gap-2 text-[10px] text-[var(--text-muted)] opacity-60">
+                {strategyPackages.length > 0 && (
+                    <span>Pkg: {strategyPackages.length}</span>
+                )}
+                <span className="text-[var(--color-success)]">
+                    ● {managedIndicators.filter(i => i.status === 'active').length}/{managedIndicators.length}
+                </span>
             </div>
 
             {/* Main Grid Layout - Industrial Style */}
@@ -118,6 +182,7 @@ export function IndustrialDashboard({
                             indicators={managedIndicators}
                             onStatusChange={handleStatusChange}
                             onConfigure={handleConfigure}
+                            onImportIndicator={onImportIndicator}
                         />
                     </div>
                 </div>
@@ -127,15 +192,17 @@ export function IndustrialDashboard({
                     {/* Day of Week Distribution */}
                     <TradeDistributionChart
                         title="Trade Distribution by Day"
-                        data={backtestResult.dayOfWeekDistribution}
+                        data={filteredDistributions.dayOfWeek}
                         colorScheme="purple"
+                        sourceLabel={filteredDistributions.sourceLabel}
                     />
 
                     {/* Hour of Day Distribution */}
                     <TradeDistributionChart
                         title="Trade Distribution by Hour"
-                        data={backtestResult.hourOfDayDistribution}
+                        data={filteredDistributions.hourOfDay}
                         colorScheme="cyan"
+                        sourceLabel={filteredDistributions.sourceLabel}
                     />
 
                     {/* Quick Stats Panel */}

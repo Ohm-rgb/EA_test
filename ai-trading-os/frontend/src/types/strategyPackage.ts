@@ -1,9 +1,13 @@
 /**
  * Strategy Package Types
  * Frontend-only abstraction for grouping related trading rules
+ * 
+ * @lifecycle draft → ready → active → disabled
+ * @gate Only 'active' packages visible in Strategy Configuration
  */
 
-export type PackageStatus = 'active' | 'partial' | 'disabled';
+// Control-First workflow: draft → ready → active → (partial) → disabled
+export type PackageStatus = 'draft' | 'ready' | 'active' | 'partial' | 'disabled';
 
 /**
  * Single sub-rule within a Strategy Package

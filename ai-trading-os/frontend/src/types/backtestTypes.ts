@@ -124,6 +124,18 @@ export interface TradeDistribution {
     label: string;                      // e.g., "Monday", "09:00"
     count: number;
     winRate: number;
+    sourceIndicatorId?: string;         // Which indicator generated these trades
+}
+
+/**
+ * Per-indicator distribution data
+ * Trade distribution filtered by source indicator
+ */
+export interface IndicatorDistributionData {
+    indicatorId: string;
+    indicatorName: string;
+    dayOfWeekDistribution: TradeDistribution[];
+    hourOfDayDistribution: TradeDistribution[];
 }
 
 /**
@@ -229,14 +241,37 @@ export function generateMockEquityCurve(days: number = 90): EquityPoint[] {
 }
 
 /**
- * Generate mock trade distribution
+ * Generate mock trade distribution per indicator
  */
-export function generateMockDayDistribution(): TradeDistribution[] {
+export function generateMockDayDistribution(indicatorId?: string): TradeDistribution[] {
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
     return days.map(day => ({
         label: day,
         count: Math.floor(Math.random() * 30) + 10,
-        winRate: Math.round((Math.random() * 30 + 50) * 10) / 10
+        winRate: Math.round((Math.random() * 30 + 50) * 10) / 10,
+        sourceIndicatorId: indicatorId
+    }));
+}
+
+export function generateMockHourDistribution(indicatorId?: string): TradeDistribution[] {
+    const hours = ['00-04', '04-08', '08-12', '12-16', '16-20', '20-24'];
+    return hours.map(hour => ({
+        label: hour,
+        count: Math.floor(Math.random() * 40) + 10,
+        winRate: Math.round((Math.random() * 30 + 50) * 10) / 10,
+        sourceIndicatorId: indicatorId
+    }));
+}
+
+/**
+ * Generate distribution data for all indicators
+ */
+export function generateIndicatorDistributions(indicators: { id: string; name: string }[]): IndicatorDistributionData[] {
+    return indicators.map(ind => ({
+        indicatorId: ind.id,
+        indicatorName: ind.name,
+        dayOfWeekDistribution: generateMockDayDistribution(ind.id),
+        hourOfDayDistribution: generateMockHourDistribution(ind.id)
     }));
 }
 

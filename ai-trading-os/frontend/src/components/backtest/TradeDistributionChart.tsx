@@ -6,18 +6,20 @@ interface TradeDistributionChartProps {
     title: string;
     data: TradeDistribution[];
     colorScheme?: 'purple' | 'cyan';
+    sourceLabel?: string;  // Shows which indicator(s) the data is from
 }
 
 /**
  * Horizontal bar chart for trade distribution
- * Similar to "Leave Day" section in reference dashboard
+ * Filters by active indicators in Indicator Control
  */
 export function TradeDistributionChart({
     title,
     data,
-    colorScheme = 'purple'
+    colorScheme = 'purple',
+    sourceLabel
 }: TradeDistributionChartProps) {
-    const maxCount = Math.max(...data.map(d => d.count));
+    const maxCount = Math.max(...data.map(d => d.count), 1);
 
     const getBarColor = (winRate: number) => {
         if (colorScheme === 'cyan') {
@@ -36,10 +38,17 @@ export function TradeDistributionChart({
 
     return (
         <div className="industrial-panel-sm">
-            {/* Header */}
-            <h4 className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wider mb-3">
-                {title}
-            </h4>
+            {/* Header with Source Label */}
+            <div className="flex items-center justify-between mb-3">
+                <h4 className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wider">
+                    {title}
+                </h4>
+                {sourceLabel && (
+                    <span className="text-[9px] text-[var(--color-accent)] bg-[var(--color-accent)]/10 px-2 py-0.5 rounded">
+                        {sourceLabel}
+                    </span>
+                )}
+            </div>
 
             {/* Bars */}
             <div className="space-y-2">
