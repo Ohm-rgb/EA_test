@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TopBar } from "@/components/layout";
 import { GlassCard, Button, Chip, Badge } from "@/components/ui";
 import { PineScriptImportModal } from "@/components/modals/PineScriptImportModal";
@@ -30,25 +30,110 @@ const indicators = ['RSI', 'MACD', 'EMA', 'SMA', 'Bollinger Bands', 'Price', 'Vo
 const operators = ['crosses_above', 'crosses_below', 'greater_than', 'less_than', 'equals'];
 const actions = ['Buy', 'Sell', 'Close Position', 'Add to Position'];
 
+import { BotSelector } from "@/components/bot/BotSelector";
+import { Bot, BotStatus, BotConfig } from "@/types/botTypes";
+import { BotApi } from "@/services/botApi"; // Import API Service
+
+// Mock Generator Removed - Using Real API
+
+
 export default function BotStudio() {
-    const [botName, setBotName] = useState('AlphaBot');
-    const [personality, setPersonality] = useState<'conservative' | 'balanced' | 'aggressive'>('balanced');
+    // Multi-Bot State Management
+    const [bots, setBots] = useState<Bot[]>([]); // Initialize empty
+    const [activeBotId, setActiveBotId] = useState<string>(''); // Initialize empty
+
+    // Fetch Bots on Mount
+    useEffect(() => {
+        const loadBots = async () => {
+            try {
+                const fetchedBots = await BotApi.getBots();
+                if (fetchedBots.length > 0) {
+                    setBots(fetchedBots);
+                    setActiveBotId(fetchedBots[0].id);
+                } else {
+                    // Create Default Bot if none exist (First Run)
+                    const output = await handleCreateBot(true); // Helper to create default
+                }
+            } catch (err) {
+                console.error("Failed to load bots:", err);
+            }
+        };
+        loadBots();
+    }, []);
+
+    // Derived Active Bot
+    const activeBot = bots.find(b => b.id === activeBotId) || (bots.length > 0 ? bots[0] : null);
+
+    const updateActiveBotConfig = async (key: keyof BotConfig, value: any) => {
+        if (!activeBot) return;
+
+        // Optimistic Update
+        const updatedBot = { ...activeBot, configuration: { ...activeBot.configuration, [key]: value } };
+        setBots(prev => prev.map(b => b.id === activeBotId ? updatedBot : b));
+
+        // API Update (Debounced in real app, distinct here for simplicity)
+        try {
+            await BotApi.updateBotConfig(activeBotId, updatedBot.configuration);
+        } catch (err) {
+            console.error("Failed to save config:", err);
+            // Revert on error?
+        }
+    };
+
+    // Derived values for easier UI binding
+    const personality = activeBot?.configuration.personality || 'balanced';
+    const riskPerTrade = activeBot?.configuration.riskPerTrade || 1;
+    const maxDailyTrades = activeBot?.configuration.maxDailyTrades || 10;
+    const stopOnLoss = activeBot?.configuration.stopOnLoss || 3;
+    const timeframe = activeBot?.configuration.timeframe || 'H1';
+
+    // Derived setters
+    const setPersonality = (val: 'conservative' | 'balanced' | 'aggressive') => updateActiveBotConfig('personality', val);
+    const setRiskPerTrade = (val: number) => updateActiveBotConfig('riskPerTrade', val);
+    const setMaxDailyTrades = (val: number) => updateActiveBotConfig('maxDailyTrades', val);
+    const setStopOnLoss = (val: number) => updateActiveBotConfig('stopOnLoss', val);
+    const setTimeframe = (val: string) => updateActiveBotConfig('timeframe', val);
+
+    // Bot Rules State
     const [rules, setRules] = useState<BotRule[]>([
         { id: 1, indicator: 'RSI', operator: 'crosses_below', value: 30, action: 'Buy', isEnabled: true },
         { id: 2, indicator: 'Price', operator: 'crosses_above', value: 20, action: 'Sell', isEnabled: true },
     ]);
-    const [riskPerTrade, setRiskPerTrade] = useState(1);
-    const [maxDailyTrades, setMaxDailyTrades] = useState(10);
-    const [stopOnLoss, setStopOnLoss] = useState(3);
-    const [timeframe, setTimeframe] = useState('H1');
 
-    // Visual Logic Builder View Mode
+    const handleBotSelect = (botId: string) => {
+        setActiveBotId(botId);
+    };
+
+    const handleCreateBot = async (isInit = false) => {
+        const newBotPayload: Bot = {
+            id: `bot_${Date.now()}`,
+            name: 'New Trading Bot',
+            status: 'draft',
+            configuration: {
+                personality: 'balanced',
+                riskPerTrade: 1,
+                maxDailyTrades: 10,
+                stopOnLoss: 3,
+                timeframe: 'H1'
+            },
+            boundIndicators: []
+        };
+
+        try {
+            const createdBot = await BotApi.createBot(newBotPayload);
+            setBots(prev => [...prev, createdBot]);
+            if (isInit) { // If called during initialization
+                setActiveBotId(createdBot.id);
+            } else {
+                setActiveBotId(createdBot.id);
+            }
+            return createdBot;
+        } catch (err) {
+            console.error("Failed to create bot:", err);
+        }
+    };
     const [viewMode, setViewMode] = useState<'logic' | 'indicators'>('logic');
-    const [activeIndicators, setActiveIndicators] = useState<Indicator[]>([
-        { id: 'rsi_14', type: 'RSI', period: 14, source: 'Close' },
-        { id: 'ema_20', type: 'EMA', period: 20, source: 'Close' },
-        { id: 'price', type: 'Price', period: 0, source: 'Real-time' }
-    ]);
+    const [activeIndicators, setActiveIndicators] = useState<Indicator[]>([]);
 
     // Import Modal State
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -57,37 +142,135 @@ export default function BotStudio() {
     const [strategyPackages, setStrategyPackages] = useState<StrategyPackage[]>([]);
     const [configurePackage, setConfigurePackage] = useState<StrategyPackage | null>(null);
 
-    const handleStrategyImport = (strategy: ParsedStrategy) => {
-        // Map imported indicators to local state
-        const newIndicators = strategy.indicators.map(ind => ({
-            id: ind.id,
-            type: ind.type,
-            period: ind.period,
-            source: ind.source
-        }));
+    // Fetch Indicators when Active Bot Changes
+    useEffect(() => {
+        if (!activeBotId) return;
 
-        // Check if this is a package (complex indicator)
+        const loadIndicators = async () => {
+            try {
+                // Fetch all indicators bound to this bot (or global ones if we support that later)
+                const inds = await BotApi.getIndicators(activeBotId);
+
+                // Map backend response to frontend StrategyPackage structure
+                const mappedInds = inds.map((i: any) => ({
+                    ...i,
+                    subRules: i.rules ? i.rules.map((r: any) => ({
+                        ...r,
+                        isEnabled: r.is_enabled // Map snake_case to camelCase
+                    })) : [],
+                    isEnabled: i.status !== 'disabled' // Derive isEnabled from status
+                }));
+
+                // Update StrategyPackages state (Source of Truth)
+                setStrategyPackages(mappedInds);
+
+                // Derived: Update Active Indicators list for Logic Builder validation
+                const activeInds = inds
+                    .filter((i: any) => i.status === 'active')
+                    .map((i: any) => ({
+                        id: i.id,
+                        type: i.type,
+                        period: i.period,
+                        source: i.source
+                    }));
+                setActiveIndicators(activeInds);
+
+            } catch (err) {
+                console.error("Failed to load indicators:", err);
+            }
+        };
+        loadIndicators();
+    }, [activeBotId]);
+
+    // Load Rules
+    useEffect(() => {
+        if (!activeBotId) return;
+        const loadRules = async () => {
+            try {
+                const fetchedRules = await BotApi.getBotRules(activeBotId);
+                const mappedRules = fetchedRules.map((r: any) => ({
+                    id: r.id,
+                    indicator: r.indicator_id, // Map backend ID to frontend name/ID
+                    operator: r.operator,
+                    value: r.value,
+                    action: r.action,
+                    isEnabled: r.is_enabled
+                }));
+                // Only set if we have rules, otherwise keep default or empty? 
+                // Better to clear if empty to reflect DB state
+                if (fetchedRules.length > 0) {
+                    setRules(mappedRules);
+                } else {
+                    setRules([]); // Clear defaults if DB is empty but verified
+                }
+            } catch (err) {
+                console.error("Failed to load rules:", err);
+            }
+        };
+        loadRules();
+    }, [activeBotId]);
+
+    const handleSaveRules = async () => {
+        if (!activeBotId) return;
+        try {
+            const payload = rules.map(r => ({
+                indicator_id: r.indicator,
+                operator: r.operator,
+                value: r.value,
+                action: r.action,
+                is_enabled: r.isEnabled
+            }));
+            await BotApi.replaceBotRules(activeBotId, payload);
+            alert("Rules saved successfully!");
+            // In a real app, use a Toast component
+        } catch (err: any) {
+            console.error("Failed to save rules:", err);
+            alert(`Failed to save: ${err.message}`);
+        }
+    };
+
+    const handleStrategyImport = async (strategy: ParsedStrategy) => {
+        // 1. Handle Strategy Package (Complex Indicator)
         if (strategy.package) {
-            // CONTROL-FIRST: Create as Draft - must be configured & activated in Industrial Control
-            const draftPackage: StrategyPackage = {
-                ...strategy.package,
-                status: 'draft'  // NOT visible in Strategy Configuration yet
-            };
-            setStrategyPackages(prev => [...prev, draftPackage]);
-            setActiveIndicators(newIndicators.length > 0 ? newIndicators : activeIndicators);
+            try {
+                // Ensure ID is unique if needed, or rely on backend
+                const pkgToCreate = {
+                    ...strategy.package,
+                    id: strategy.package.id || `pkg_${Date.now()}`,
+                    status: 'draft',
+                    bot_id: activeBotId // Bind to valid bot
+                };
 
-            // Switch to Industrial Control tab to configure & activate
-            setActiveTab('backtest');
-        } else {
-            // Individual rules (simple strategy) - still added directly
+                await BotApi.createIndicator(pkgToCreate);
+
+                // Refresh list
+                const inds = await BotApi.getIndicators(activeBotId);
+                setStrategyPackages(inds);
+
+                // Switch to Control View
+                setActiveTab('backtest');
+            } catch (err) {
+                console.error("Failed to import strategy package:", err);
+            }
+        }
+        // 2. Handle Simple Rules (Legacy/Direct)
+        else {
+            const newIndicators = strategy.indicators.map(ind => ({
+                id: ind.id,
+                type: ind.type,
+                period: ind.period,
+                source: ind.source
+            }));
+
             const newRules = strategy.rules.map(rule => ({
-                id: rule.id,
+                id: Number(rule.id) || Date.now(),
                 indicator: rule.indicator,
                 operator: rule.operator,
                 value: rule.value,
                 action: rule.action,
                 isEnabled: rule.isEnabled
             }));
+
             setActiveIndicators(newIndicators);
             setRules(newRules);
             setViewMode('logic');
@@ -199,14 +382,14 @@ export default function BotStudio() {
                             {/* Bot Name & Personality - Fixed height */}
                             <GlassCard className="p-6 flex-none">
                                 <div className="flex items-center gap-8">
-                                    {/* Bot Name */}
+                                    {/* Bot Selector */}
                                     <div className="flex-1">
-                                        <label className="block text-sm text-[var(--text-secondary)] mb-2">Bot Name</label>
-                                        <input
-                                            type="text"
-                                            value={botName}
-                                            onChange={(e) => setBotName(e.target.value)}
-                                            className="input-field text-lg font-semibold"
+                                        <label className="block text-sm text-[var(--text-secondary)] mb-2">Target Machine</label>
+                                        <BotSelector
+                                            bots={bots}
+                                            activeBotId={activeBotId}
+                                            onSelect={handleBotSelect}
+                                            onCreate={handleCreateBot}
                                         />
                                     </div>
 
@@ -420,20 +603,64 @@ export default function BotStudio() {
                                                         </div>
                                                     ))}
 
-                                                    <button
-                                                        onClick={addRule}
-                                                        className="w-full py-4 border-2 border-dashed border-[var(--glass-border)] rounded-xl text-[var(--text-secondary)] hover:border-[var(--color-success)] hover:text-[var(--color-success)] transition-all flex items-center justify-center gap-2 group"
-                                                    >
-                                                        <span className="bg-[var(--glass-bg)] w-8 h-8 rounded-full flex items-center justify-center border border-[var(--glass-border)] group-hover:border-[var(--color-success)] transition-colors">+</span>
-                                                        <span>Add Logic Block</span>
-                                                    </button>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={addRule}
+                                                            className="flex-1 py-4 border-2 border-dashed border-[var(--glass-border)] rounded-xl text-[var(--text-secondary)] hover:border-[var(--color-success)] hover:text-[var(--color-success)] transition-all flex items-center justify-center gap-2 group"
+                                                        >
+                                                            <span className="bg-[var(--glass-bg)] w-8 h-8 rounded-full flex items-center justify-center border border-[var(--glass-border)] group-hover:border-[var(--color-success)] transition-colors">+</span>
+                                                            <span>Add Block</span>
+                                                        </button>
+
+                                                        <button
+                                                            onClick={handleSaveRules}
+                                                            disabled={activeBot?.status === 'running' || activeBot?.status === 'paused'}
+                                                            className={`flex-1 py-4 rounded-xl flex items-center justify-center gap-2 transition-all font-semibold
+                                                                ${activeBot?.status === 'running' || activeBot?.status === 'paused'
+                                                                    ? 'bg-[var(--bg-tertiary)] text-[var(--text-muted)] cursor-not-allowed opacity-70'
+                                                                    : 'bg-[var(--color-accent)]/10 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20 border border-[var(--color-accent)]/20'}`}
+                                                        >
+                                                            {activeBot?.status === 'running' || activeBot?.status === 'paused' ? (
+                                                                <>
+                                                                    <span>🔒</span>
+                                                                    <span>Locked (Running)</span>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <span>💾</span>
+                                                                    <span>Save Logic</span>
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                    <div className="text-[10px] text-[var(--text-muted)] text-center mt-2 opacity-60">
+                                                        Changes must be saved before activation.
+                                                    </div>
                                                 </div>
                                             ) : (
-                                                /* Indicators View */
+                                                /* Indicators View - READ ONLY SHELF */
                                                 <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+
+                                                    {/* Shelf Header */}
+                                                    <div className="flex items-center justify-between p-3 rounded-lg bg-[var(--bg-tertiary)]/50 border border-dashed border-[var(--glass-border)]">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded bg-[var(--color-accent)]/20 flex items-center justify-center text-lg">🏭</div>
+                                                            <div>
+                                                                <div className="text-xs font-bold text-[var(--color-accent)] uppercase tracking-wide">Approved Parts Shelf</div>
+                                                                <div className="text-[10px] text-[var(--text-muted)]">These indicators are Active and ready for use.</div>
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => setActiveTab('backtest')}
+                                                            className="text-xs text-[var(--text-primary)] hover:text-[var(--color-accent)] hover:underline flex items-center gap-1"
+                                                        >
+                                                            Manage in Industrial Control ↗
+                                                        </button>
+                                                    </div>
+
                                                     <div className="grid grid-cols-2 gap-4">
                                                         {activeIndicators.map((ind) => (
-                                                            <div key={ind.id} className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--glass-border)] hover:border-[var(--color-accent)]/50 transition-colors group relative">
+                                                            <div key={ind.id} className="p-4 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--glass-border)] opacity-80 hover:opacity-100 transition-opacity">
                                                                 <div className="flex justify-between items-start mb-2">
                                                                     <div className="flex items-center gap-2">
                                                                         <div className="w-8 h-8 rounded-lg bg-[var(--bg-secondary)] flex items-center justify-center text-[var(--color-accent)] font-bold text-xs border border-[var(--glass-border)]">
@@ -444,31 +671,19 @@ export default function BotStudio() {
                                                                             <span className="text-xs text-[var(--text-muted)]">Source: {ind.source}</span>
                                                                         </div>
                                                                     </div>
-                                                                    <button className="text-[var(--text-muted)] hover:text-[var(--color-critical)] opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                                                                    <div className="px-2 py-0.5 rounded text-[10px] uppercase font-bold text-emerald-400 bg-emerald-400/10 border border-emerald-400/20">
+                                                                        Active
+                                                                    </div>
                                                                 </div>
 
                                                                 {ind.period > 0 && (
-                                                                    <div className="mt-3">
+                                                                    <div className="mt-3 opacity-60">
                                                                         <label className="text-[10px] uppercase font-bold text-[var(--text-secondary)] tracking-wider">Period</label>
-                                                                        <input
-                                                                            type="number"
-                                                                            value={ind.period}
-                                                                            onChange={(e) => {
-                                                                                const val = Number(e.target.value);
-                                                                                setActiveIndicators(activeIndicators.map(i => i.id === ind.id ? { ...i, period: val } : i));
-                                                                            }}
-                                                                            className="w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded px-2 py-1 text-sm mt-1 focus:border-[var(--color-accent)] outline-none transition-colors"
-                                                                        />
+                                                                        <div className="text-sm font-medium mt-1">{ind.period}</div>
                                                                     </div>
                                                                 )}
                                                             </div>
                                                         ))}
-
-                                                        {/* Add New Indicator Card */}
-                                                        <button className="p-4 rounded-xl border-2 border-dashed border-[var(--glass-border)] flex flex-col items-center justify-center gap-2 text-[var(--text-secondary)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-all min-h-[100px]">
-                                                            <span className="text-2xl">+</span>
-                                                            <span className="text-sm font-medium">Add Indicator</span>
-                                                        </button>
                                                     </div>
                                                 </div>
                                             )}

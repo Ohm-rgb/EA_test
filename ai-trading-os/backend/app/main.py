@@ -7,7 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api.v1 import auth, bots, trades, portfolio, settings as settings_api, chat, health
+from app.api import bots, indicators, rules # Import our new routers directly
+from app.api.v1 import auth, trades, portfolio, settings as settings_api, chat, health
 
 
 @asynccontextmanager
@@ -31,7 +32,7 @@ async def lifespan(app: FastAPI):
             db.add(default_user)
             db.commit()
             db.refresh(default_user)
-            print("✅ Created default user")
+            print("[OK] Created default user")
         
         # Create default settings if not exists
         if not db.query(Settings).first():
@@ -50,14 +51,14 @@ async def lifespan(app: FastAPI):
             )
             db.add(default_settings)
             db.commit()
-            print("✅ Created default settings")
+            print("[OK] Created default settings")
     finally:
         db.close()
     
-    print("🚀 AI Trading OS Backend Started")
+    print("[STARTUP] AI Trading OS Backend Started")
     yield
     # Shutdown
-    print("👋 AI Trading OS Backend Stopped")
+    print("[SHUTDOWN] AI Trading OS Backend Stopped")
 
 
 app = FastAPI(
@@ -70,7 +71,8 @@ app = FastAPI(
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS.split(","),
+    # allow_origins=settings.CORS_ORIGINS.split(","),
+    allow_origins=["*"], # Allow all for Dev
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -79,6 +81,8 @@ app.add_middleware(
 # API Routes
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(bots.router, prefix="/api/v1/bots", tags=["Bot Profiles"])
+app.include_router(indicators.router, prefix="/api/v1/indicators", tags=["Indicators"])
+app.include_router(rules.router, prefix="/api/v1/rules", tags=["Rules"]) # Added Rules Router
 app.include_router(trades.router, prefix="/api/v1/trades", tags=["Trading"])
 app.include_router(portfolio.router, prefix="/api/v1/portfolio", tags=["Portfolio"])
 app.include_router(settings_api.router, prefix="/api/v1/settings", tags=["Settings"])
