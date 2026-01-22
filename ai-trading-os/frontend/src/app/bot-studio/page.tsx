@@ -5,8 +5,10 @@ import { TopBar } from "@/components/layout";
 import { GlassCard, Button, Chip, Badge } from "@/components/ui";
 import { PineScriptImportModal } from "@/components/modals/PineScriptImportModal";
 import { StrategyPackageCard, StrategyPackageModal } from "@/components/strategy";
+import { IndustrialDashboard } from "@/components/backtest";
 import { ParsedStrategy } from "@/services/pineScriptService";
 import { StrategyPackage, calculatePackageStatus } from "@/types/strategyPackage";
+import { ManagedIndicator } from "@/types/backtestTypes";
 
 interface BotRule {
     id: number;
@@ -550,13 +552,14 @@ export default function BotStudio() {
                             </div>
                         </div>
                     ) : (
-                        <div className="h-full min-h-[400px] flex items-center justify-center text-[var(--text-muted)] animate-in fade-in zoom-in-95 duration-300">
-                            <div className="text-center">
-                                <span className="text-4xl block mb-2">📊</span>
-                                <p>Backtesting Module Placeholder</p>
-                                <p className="text-xs mt-2 opacity-50">Select 'Strategy Configuration' to build your bot.</p>
-                            </div>
-                        </div>
+                        /* Industrial Dashboard - Post-conversion control layer */
+                        <IndustrialDashboard
+                            strategyPackages={strategyPackages}
+                            onIndicatorConfigure={(indicator: ManagedIndicator) => {
+                                console.log('Configure indicator:', indicator.name);
+                                // TODO: Open indicator configuration modal
+                            }}
+                        />
                     )}
                 </div>
             </div>
