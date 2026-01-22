@@ -210,21 +210,25 @@ export default function BotStudio() {
         loadRules();
     }, [activeBotId]);
 
-    const handleSaveRules = async () => {
-        if (!activeBotId) return;
+    const handleSaveConfiguration = async () => {
+        if (!activeBotId || !activeBot) return;
         try {
-            const payload = rules.map(r => ({
+            // 1. Save Rules
+            const rulesPayload = rules.map(r => ({
                 indicator_id: r.indicator,
                 operator: r.operator,
                 value: r.value,
                 action: r.action,
                 is_enabled: r.isEnabled
             }));
-            await BotApi.replaceBotRules(activeBotId, payload);
-            alert("Rules saved successfully!");
-            // In a real app, use a Toast component
+            await BotApi.replaceBotRules(activeBotId, rulesPayload);
+
+            // 2. Save Bot Config (already auto-saved, but ensure latest)
+            await BotApi.updateBotConfig(activeBotId, activeBot.configuration);
+
+            alert("Configuration saved successfully!");
         } catch (err: any) {
-            console.error("Failed to save rules:", err);
+            console.error("Failed to save configuration:", err);
             alert(`Failed to save: ${err.message}`);
         }
     };
@@ -391,6 +395,33 @@ export default function BotStudio() {
                                             onSelect={handleBotSelect}
                                             onCreate={handleCreateBot}
                                         />
+                                    </div>
+
+                                    {/* GLOBAL Save Configuration Button */}
+                                    <div className="flex-shrink-0">
+                                        <button
+                                            onClick={handleSaveConfiguration}
+                                            disabled={activeBot?.status === 'running' || activeBot?.status === 'paused'}
+                                            className={`px-6 py-3 rounded-xl flex items-center gap-2 transition-all font-semibold shadow-lg
+                                                ${activeBot?.status === 'running' || activeBot?.status === 'paused'
+                                                    ? 'bg-[var(--bg-tertiary)] text-[var(--text-muted)] cursor-not-allowed opacity-70'
+                                                    : 'bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-success)] text-white hover:shadow-xl hover:scale-105'}`}
+                                        >
+                                            {activeBot?.status === 'running' || activeBot?.status === 'paused' ? (
+                                                <>
+                                                    <span>🔒</span>
+                                                    <span>Locked (Running)</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <span>✓</span>
+                                                    <span>Save Configuration</span>
+                                                </>
+                                            )}
+                                        </button>
+                                        <div className="text-[10px] text-[var(--text-muted)] text-center mt-1 opacity-60">
+                                            Logic, Risk & Settings
+                                        </div>
                                     </div>
 
                                     {/* Personality Selector */}
@@ -603,39 +634,13 @@ export default function BotStudio() {
                                                         </div>
                                                     ))}
 
-                                                    <div className="flex gap-2">
-                                                        <button
-                                                            onClick={addRule}
-                                                            className="flex-1 py-4 border-2 border-dashed border-[var(--glass-border)] rounded-xl text-[var(--text-secondary)] hover:border-[var(--color-success)] hover:text-[var(--color-success)] transition-all flex items-center justify-center gap-2 group"
-                                                        >
-                                                            <span className="bg-[var(--glass-bg)] w-8 h-8 rounded-full flex items-center justify-center border border-[var(--glass-border)] group-hover:border-[var(--color-success)] transition-colors">+</span>
-                                                            <span>Add Block</span>
-                                                        </button>
-
-                                                        <button
-                                                            onClick={handleSaveRules}
-                                                            disabled={activeBot?.status === 'running' || activeBot?.status === 'paused'}
-                                                            className={`flex-1 py-4 rounded-xl flex items-center justify-center gap-2 transition-all font-semibold
-                                                                ${activeBot?.status === 'running' || activeBot?.status === 'paused'
-                                                                    ? 'bg-[var(--bg-tertiary)] text-[var(--text-muted)] cursor-not-allowed opacity-70'
-                                                                    : 'bg-[var(--color-accent)]/10 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20 border border-[var(--color-accent)]/20'}`}
-                                                        >
-                                                            {activeBot?.status === 'running' || activeBot?.status === 'paused' ? (
-                                                                <>
-                                                                    <span>🔒</span>
-                                                                    <span>Locked (Running)</span>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <span>💾</span>
-                                                                    <span>Save Logic</span>
-                                                                </>
-                                                            )}
-                                                        </button>
-                                                    </div>
-                                                    <div className="text-[10px] text-[var(--text-muted)] text-center mt-2 opacity-60">
-                                                        Changes must be saved before activation.
-                                                    </div>
+                                                    <button
+                                                        onClick={addRule}
+                                                        className="w-full py-4 border-2 border-dashed border-[var(--glass-border)] rounded-xl text-[var(--text-secondary)] hover:border-[var(--color-success)] hover:text-[var(--color-success)] transition-all flex items-center justify-center gap-2 group"
+                                                    >
+                                                        <span className="bg-[var(--glass-bg)] w-8 h-8 rounded-full flex items-center justify-center border border-[var(--glass-border)] group-hover:border-[var(--color-success)] transition-colors">+</span>
+                                                        <span>Add Logic Block</span>
+                                                    </button>
                                                 </div>
                                             ) : (
                                                 /* Indicators View - READ ONLY SHELF */

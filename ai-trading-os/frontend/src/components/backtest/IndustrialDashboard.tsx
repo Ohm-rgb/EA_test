@@ -15,7 +15,8 @@ import {
 import { BacktestSummaryPanel } from './BacktestSummaryPanel';
 import { EquityCurveChart } from './EquityCurveChart';
 import { IndicatorManagementPanel } from './IndicatorManagementPanel';
-import { TradeDistributionChart } from './TradeDistributionChart';
+import { IndicatorControlPanel } from './IndicatorControlPanel';
+import { SmartMoneyConceptsCapability } from '@/services/capabilities/smc';
 
 interface IndustrialDashboardProps {
     strategyPackages: StrategyPackage[];
@@ -44,6 +45,8 @@ export function IndustrialDashboard({
     const [managedIndicators, setManagedIndicators] = useState<ManagedIndicator[]>(() =>
         generateMockManagedIndicators()
     );
+
+    const [selectedIndicatorForConfig, setSelectedIndicatorForConfig] = useState<ManagedIndicator | null>(null);
 
     // Per-indicator distribution data (generated once)
     const [indicatorDistributions] = useState<IndicatorDistributionData[]>(() =>
@@ -139,11 +142,9 @@ export function IndustrialDashboard({
 
     // Handle configure indicator
     const handleConfigure = (indicator: ManagedIndicator) => {
+        setSelectedIndicatorForConfig(indicator);
         if (onIndicatorConfigure) {
             onIndicatorConfigure(indicator);
-        } else {
-            // Default: just log for now
-            console.log('Configure indicator:', indicator.name);
         }
     };
 
@@ -187,71 +188,63 @@ export function IndustrialDashboard({
                     </div>
                 </div>
 
-                {/* Right Column - Distribution Charts */}
-                <div className="col-span-5 flex flex-col gap-4">
-                    {/* Day of Week Distribution */}
-                    <TradeDistributionChart
-                        title="Trade Distribution by Day"
-                        data={filteredDistributions.dayOfWeek}
-                        colorScheme="purple"
-                        sourceLabel={filteredDistributions.sourceLabel}
-                    />
+                {/* Right Column - Indicator Control Panel */}
+                <div className="col-span-5 flex flex-col gap-4 min-h-0">
+                    {/* Control Panel Area */}
+                    <div className="flex-1 min-h-0 flex flex-col">
+                        {selectedIndicatorForConfig ? (
+                            <IndicatorControlPanel
+                                indicatorId={selectedIndicatorForConfig.id}
+                                capability={
+                                    // Dynamic capability mapping (Mock for now)
+                                    selectedIndicatorForConfig.name.includes('Smart Money')
+                                        ? SmartMoneyConceptsCapability
+                                        : { ...SmartMoneyConceptsCapability, name: selectedIndicatorForConfig.name, id: 'generic_cap' } // Fallback
+                                }
+                                initialConfig={{}} // Would load from indicator.config
+                                onSave={() => {
+                                    // In real app, refetch/refresh 
+                                    console.log('Saved config for', selectedIndicatorForConfig.name);
+                                }}
+                            />
+                        ) : (
+                            <div className="h-full flex flex-col items-center justify-center p-8 text-center border border-dashed border-[var(--glass-border)] rounded-xl bg-[var(--bg-secondary)]/50">
+                                <div className="text-4xl mb-4 opacity-20">⚙️</div>
+                                <h3 className="text-lg font-medium text-[var(--text-secondary)]">No Indicator Selected</h3>
+                                <p className="text-sm text-[var(--text-muted)] mt-2 max-w-[250px]">
+                                    Select an indicator from the list to configure its internal parameters and signals.
+                                </p>
+                            </div>
+                        )}
+                    </div>
 
-                    {/* Hour of Day Distribution */}
-                    <TradeDistributionChart
-                        title="Trade Distribution by Hour"
-                        data={filteredDistributions.hourOfDay}
-                        colorScheme="cyan"
-                        sourceLabel={filteredDistributions.sourceLabel}
-                    />
+                    {/* Quick Stats Panel (Kept for context, but reduced) */}
+                    <div className="industrial-panel-sm flex-none">
+                        <div className="flex justify-between items-center mb-3">
+                            <h4 className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wider">
+                                Test Period Details
+                            </h4>
+                            <span className="text-[10px] text-[var(--color-accent)]">{backtestResult.testPeriod.start.toLocaleDateString()} - {backtestResult.testPeriod.end.toLocaleDateString()}</span>
+                        </div>
 
-                    {/* Quick Stats Panel */}
-                    <div className="industrial-panel-sm flex-1">
-                        <h4 className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wider mb-3">
-                            Test Period Details
-                        </h4>
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <div className="text-[10px] text-[var(--text-muted)]">Start Date</div>
-                                <div className="text-sm font-medium text-[var(--text-primary)]">
-                                    {backtestResult.testPeriod.start.toLocaleDateString()}
-                                </div>
-                            </div>
-                            <div>
-                                <div className="text-[10px] text-[var(--text-muted)]">End Date</div>
-                                <div className="text-sm font-medium text-[var(--text-primary)]">
-                                    {backtestResult.testPeriod.end.toLocaleDateString()}
-                                </div>
-                            </div>
-                            <div>
-                                <div className="text-[10px] text-[var(--text-muted)]">Winning</div>
+                                <div className="text-[10px] text-[var(--text-muted)]">Win Rate</div>
                                 <div className="text-sm font-medium text-[var(--color-success)]">
-                                    {backtestResult.winningTrades} trades
+                                    {Math.round((backtestResult.winningTrades / backtestResult.totalTrades) * 100)}%
                                 </div>
                             </div>
                             <div>
-                                <div className="text-[10px] text-[var(--text-muted)]">Losing</div>
-                                <div className="text-sm font-medium text-[var(--color-critical)]">
-                                    {backtestResult.losingTrades} trades
-                                </div>
-                            </div>
-                            <div>
-                                <div className="text-[10px] text-[var(--text-muted)]">Gross Profit</div>
-                                <div className="text-sm font-medium text-[var(--color-success)]">
-                                    ${backtestResult.grossProfit.toLocaleString()}
-                                </div>
-                            </div>
-                            <div>
-                                <div className="text-[10px] text-[var(--text-muted)]">Gross Loss</div>
-                                <div className="text-sm font-medium text-[var(--color-critical)]">
-                                    ${backtestResult.grossLoss.toLocaleString()}
+                                <div className="text-[10px] text-[var(--text-muted)]">Net Profit</div>
+                                <div className={`text-sm font-medium ${backtestResult.netProfit >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-critical)]'}`}>
+                                    ${backtestResult.netProfit.toLocaleString()}
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     {/* Control Layer Notice */}
-                    <div className="industrial-panel-sm bg-amber-500/5 border-amber-500/20">
+                    <div className="industrial-panel-sm bg-amber-500/5 border-amber-500/20 flex-none">
                         <div className="flex items-start gap-2">
                             <span className="text-lg">⚠️</span>
                             <div>

@@ -72,3 +72,21 @@ def update_indicator_status(ind_id: str, status: str, db: Session = Depends(get_
     ind.status = status
     db.commit()
     return ind
+
+@router.put("/{ind_id}/config")
+def update_indicator_config(ind_id: str, config: dict, db: Session = Depends(get_db)):
+    ind = db.query(models.StrategyPackage).filter(models.StrategyPackage.id == ind_id).first()
+    if not ind:
+        raise HTTPException(status_code=404, detail="Indicator not found")
+    
+    # Update params
+    # Note: For SQLite/SQLAlchemy, we might need to flag the field as modified if it's a JSON type,
+    # but replacing the dict usually works. 
+    ind.params = config
+    
+    # Auto-update status to "ready" if it was "draft"? Or leave it to user?
+    # User might want to save draft. Let's keep status as is.
+    
+    db.commit()
+    db.refresh(ind)
+    return ind

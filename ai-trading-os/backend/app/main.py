@@ -11,6 +11,8 @@ from app.api import bots, indicators, rules # Import our new routers directly
 from app.api.v1 import auth, trades, portfolio, settings as settings_api, chat, health
 
 
+
+# Force reload trigger
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager"""

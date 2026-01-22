@@ -65,6 +65,14 @@ export const BotApi = {
         });
     },
 
+    async updateIndicatorConfig(id: string, config: any): Promise<any> {
+        return fetchJson<any>(`/indicators/${id}/config`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+    },
+
     // --- Rules ---
     async getBotRules(botId: string): Promise<any[]> { // Using any[] for now, should be BotRule[]
         return fetchJson<any[]>(`/rules/${botId}`);
