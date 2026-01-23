@@ -25,6 +25,7 @@ class TradeResponse(BaseModel):
     take_profit: Optional[float]
     profit: Optional[float]
     status: str
+    source_indicator_id: Optional[str]  # For context-filtered backtest
     opened_at: datetime
     closed_at: Optional[datetime]
 
@@ -45,17 +46,20 @@ class TradeStats(BaseModel):
 async def list_trades(
     status: Optional[str] = Query(None, description="Filter by status: open/closed"),
     symbol: Optional[str] = Query(None, description="Filter by symbol"),
+    source_indicator_id: Optional[str] = Query(None, description="Filter by source indicator (for backtest context)"),
     limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    """List trades with optional filters"""
+    """List trades with optional filters (context-aware for backtest)"""
     query = db.query(Trade)
     
     if status:
         query = query.filter(Trade.status == status)
     if symbol:
         query = query.filter(Trade.symbol == symbol)
+    if source_indicator_id:
+        query = query.filter(Trade.source_indicator_id == source_indicator_id)
     
     trades = query.order_by(Trade.opened_at.desc()).limit(limit).all()
     return trades

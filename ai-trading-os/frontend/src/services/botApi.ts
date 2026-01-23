@@ -87,5 +87,20 @@ export const BotApi = {
                 rules: rules
             })
         });
+    },
+
+    // --- Trades (Backtest Context) ---
+    async getTrades(options?: {
+        status?: string;
+        symbol?: string;
+        sourceIndicatorId?: string;
+        limit?: number;
+    }): Promise<any[]> {
+        const params = new URLSearchParams();
+        if (options?.status) params.append('status', options.status);
+        if (options?.symbol) params.append('symbol', options.symbol);
+        if (options?.sourceIndicatorId) params.append('source_indicator_id', options.sourceIndicatorId);
+        if (options?.limit) params.append('limit', options.limit.toString());
+        return fetchJson<any[]>(`/trades?${params.toString()}`);
     }
 };

@@ -128,6 +128,9 @@ class Trade(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     bot_profile_id = Column(Integer, ForeignKey("bot_profiles.id"), nullable=True)
     
+    # Source indicator for context-filtered backtest
+    source_indicator_id = Column(String(50), nullable=True, index=True)
+    
     ticket_number = Column(String(50), nullable=True)
     symbol = Column(String(20), nullable=False)
     trade_type = Column(String(10), nullable=False)  # buy/sell
