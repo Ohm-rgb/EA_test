@@ -14,6 +14,7 @@ import {
 } from '@/types/backtestTypes';
 import { BacktestSummaryPanel } from './BacktestSummaryPanel';
 import { EquityCurveChart } from './EquityCurveChart';
+import { TradeDistributionChart } from './TradeDistributionChart';
 import { IndicatorManagementPanel } from './IndicatorManagementPanel';
 import { IndicatorControlPanel } from './IndicatorControlPanel';
 import { IndicatorContextBar } from './IndicatorContextBar';
@@ -177,7 +178,14 @@ export function IndustrialDashboard({
 
                     {/* Backtest Summary (Context Aware) */}
                     <div className="flex-none">
-                        {/* Mocking contextual data change by title/opacity for now */}
+                        {/* Context Badge */}
+                        {activeContextId && (
+                            <div className="flex items-center gap-2 mb-2 animate-in fade-in slide-in-from-left-2 duration-300">
+                                <span className="text-[10px] text-[var(--color-accent)] bg-[var(--color-accent)]/10 px-2 py-0.5 rounded font-medium">
+                                    📊 Filtered: {filteredDistributions.sourceLabel}
+                                </span>
+                            </div>
+                        )}
                         <div className={`transition-opacity duration-300 ${activeContextId ? 'opacity-100' : 'opacity-90'}`}>
                             <BacktestSummaryPanel result={backtestResult} />
                         </div>
@@ -189,6 +197,24 @@ export function IndustrialDashboard({
                             data={backtestResult.equityCurve}
                             height={220}
                         />
+                    </div>
+
+                    {/* Trade Distribution Charts (Context-Filtered) */}
+                    <div className="flex-none">
+                        <div className="grid grid-cols-2 gap-4">
+                            <TradeDistributionChart
+                                title="Trade Distribution by Day"
+                                data={filteredDistributions.dayOfWeek}
+                                colorScheme="purple"
+                                sourceLabel={filteredDistributions.sourceLabel}
+                            />
+                            <TradeDistributionChart
+                                title="Trade Distribution by Hour"
+                                data={filteredDistributions.hourOfDay}
+                                colorScheme="cyan"
+                                sourceLabel={filteredDistributions.sourceLabel}
+                            />
+                        </div>
                     </div>
 
                     {/* Management List (Keep for bulk view) */}

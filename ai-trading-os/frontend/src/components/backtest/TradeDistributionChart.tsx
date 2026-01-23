@@ -36,6 +36,9 @@ export function TradeDistributionChart({
                 : 'bg-purple-600';
     };
 
+    // Empty State
+    const hasNoData = data.length === 0 || data.every(d => d.count === 0);
+
     return (
         <div className="industrial-panel-sm">
             {/* Header with Source Label */}
@@ -50,30 +53,42 @@ export function TradeDistributionChart({
                 )}
             </div>
 
-            {/* Bars */}
-            <div className="space-y-2">
-                {data.map((item) => (
-                    <div key={item.label} className="flex items-center gap-2">
-                        {/* Label */}
-                        <span className="w-12 text-[10px] text-[var(--text-muted)] shrink-0">
-                            {item.label}
-                        </span>
+            {/* Bars or Empty State */}
+            {hasNoData ? (
+                <div className="flex flex-col items-center justify-center py-6 text-center">
+                    <span className="text-2xl opacity-40 mb-2">📭</span>
+                    <p className="text-[10px] text-[var(--text-muted)]">
+                        No trades for this context
+                    </p>
+                    <p className="text-[9px] text-[var(--text-muted)] opacity-60 mt-1">
+                        Run backtest to generate data
+                    </p>
+                </div>
+            ) : (
+                <div className="space-y-2">
+                    {data.map((item) => (
+                        <div key={item.label} className="flex items-center gap-2">
+                            {/* Label */}
+                            <span className="w-12 text-[10px] text-[var(--text-muted)] shrink-0">
+                                {item.label}
+                            </span>
 
-                        {/* Bar */}
-                        <div className="flex-1 h-4 bg-[var(--bg-tertiary)] rounded overflow-hidden">
-                            <div
-                                className={`h-full rounded transition-all duration-500 ${getBarColor(item.winRate)}`}
-                                style={{ width: `${(item.count / maxCount) * 100}%` }}
-                            />
+                            {/* Bar */}
+                            <div className="flex-1 h-4 bg-[var(--bg-tertiary)] rounded overflow-hidden">
+                                <div
+                                    className={`h-full rounded transition-all duration-500 ${getBarColor(item.winRate)}`}
+                                    style={{ width: `${(item.count / maxCount) * 100}%` }}
+                                />
+                            </div>
+
+                            {/* Count */}
+                            <span className="w-8 text-right text-xs text-[var(--text-primary)]">
+                                {item.count}
+                            </span>
                         </div>
-
-                        {/* Count */}
-                        <span className="w-8 text-right text-xs text-[var(--text-primary)]">
-                            {item.count}
-                        </span>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
