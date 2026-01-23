@@ -11,8 +11,10 @@ import {
     generateMockManagedIndicators,
 } from '@/types/backtestTypes';
 import { calculateBacktestMetrics } from '@/utils/backtestMetrics';
+import { sliceTradesByPeriod } from '@/utils/reliabilityMetrics';
 import { BacktestSummaryPanel } from './BacktestSummaryPanel';
 import { EquityCurveChart } from './EquityCurveChart';
+import { ReliabilityPanel } from './ReliabilityPanel';
 import { TradeDistributionChart } from './TradeDistributionChart';
 import { IndicatorManagementPanel } from './IndicatorManagementPanel';
 import { IndicatorControlPanel } from './IndicatorControlPanel';
@@ -114,6 +116,12 @@ export function IndustrialDashboard({
         };
     }, [backtestResult, activeContextIndicator]);
 
+    // Calculate Reliability Periods (Weekly Slicing) - Phase C2
+    const reliabilityPeriods = useMemo(() => {
+        if (!trades || trades.length === 0) return [];
+        return sliceTradesByPeriod(trades, 'week');
+    }, [trades]);
+
     // Aggregate 
     // (Removed dead code)
 
@@ -191,6 +199,14 @@ export function IndustrialDashboard({
                                 data={backtestResult.equityCurve}
                             />
                         ) : null}
+                    </div>
+
+                    {/* Reliability Layer (Phase C2) */}
+                    <div className="flex-none">
+                        <ReliabilityPanel
+                            periods={reliabilityPeriods}
+                            isLoading={isLoadingData}
+                        />
                     </div>
 
                     {/* Trade Distributions (Context Filtered) */}
