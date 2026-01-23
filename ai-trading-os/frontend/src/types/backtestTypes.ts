@@ -102,6 +102,9 @@ export interface ManagedIndicator {
     subSignals: SubSignalConfig[];
     enabledSubSignalCount: number;      // Derived: count of enabled sub-signals
 
+    // Config version tracking (for cache validation)
+    configHash?: string;                 // SHA256 hash of current config
+
     // Test result (required for draft → ready transition)
     testResult?: TestResult;
 

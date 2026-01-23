@@ -4,13 +4,14 @@ import { BacktestResult } from '@/types/backtestTypes';
 
 interface BacktestSummaryPanelProps {
     result: BacktestResult;
+    isStale?: boolean;  // True when current config hash != backtest snapshot hash
 }
 
 /**
  * Dense KPI metrics table - Industrial style
  * Inspired by reference dashboard "Top 5 types" section
  */
-export function BacktestSummaryPanel({ result }: BacktestSummaryPanelProps) {
+export function BacktestSummaryPanel({ result, isStale = false }: BacktestSummaryPanelProps) {
     const metrics = [
         {
             label: 'Total Trades',
@@ -77,7 +78,22 @@ export function BacktestSummaryPanel({ result }: BacktestSummaryPanelProps) {
     };
 
     return (
-        <div className="industrial-panel">
+        <div className={`industrial-panel ${isStale ? 'border-amber-500/50' : ''}`}>
+            {/* Stale Warning Banner */}
+            {isStale && (
+                <div className="flex items-center gap-2 mb-4 p-2 bg-amber-500/10 border border-amber-500/30 rounded-lg animate-in fade-in slide-in-from-top-2 duration-300">
+                    <span className="text-lg">⚠️</span>
+                    <div className="flex-1">
+                        <span className="text-xs font-medium text-amber-400">
+                            Config Changed – Re-test Required
+                        </span>
+                        <p className="text-[10px] text-amber-400/70 mt-0.5">
+                            Indicator parameters have been modified. Run backtest to update results.
+                        </p>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -85,6 +101,11 @@ export function BacktestSummaryPanel({ result }: BacktestSummaryPanelProps) {
                     <h3 className="text-sm font-semibold text-[var(--text-primary)] uppercase tracking-wide">
                         Backtest Summary
                     </h3>
+                    {isStale && (
+                        <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-400 text-[9px] font-bold rounded uppercase">
+                            Stale
+                        </span>
+                    )}
                 </div>
                 <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
                     <span>Bot: {result.botName}</span>

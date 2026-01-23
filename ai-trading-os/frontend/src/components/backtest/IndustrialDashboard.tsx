@@ -187,7 +187,14 @@ export function IndustrialDashboard({
                             </div>
                         )}
                         <div className={`transition-opacity duration-300 ${activeContextId ? 'opacity-100' : 'opacity-90'}`}>
-                            <BacktestSummaryPanel result={backtestResult} />
+                            {/* isStale: true if active indicator's config hash differs from backtest snapshot hash */}
+                            <BacktestSummaryPanel
+                                result={backtestResult}
+                                isStale={
+                                    activeContextIndicator?.configHash !== undefined &&
+                                    activeContextIndicator.configHash !== backtestResult.strategySnapshotHash
+                                }
+                            />
                         </div>
                     </div>
 

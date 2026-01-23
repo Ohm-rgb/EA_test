@@ -37,6 +37,9 @@ class StrategyPackage(Base):
     # Lifecycle
     status = Column(String, default="draft")  # draft, ready, active, disabled
     
+    # Config version tracking (for cache invalidation)
+    config_hash = Column(String, nullable=True)  # SHA256 hash of params
+    
     # Binding (Optional: an indicator might be bound to a specific bot, or global)
     # For now, we allow binding to a bot. If null, it could be a 'global' template.
     bot_id = Column(String, ForeignKey("bots.id"), nullable=True)

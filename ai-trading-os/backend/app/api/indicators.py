@@ -77,6 +77,14 @@ class IndicatorConfigUpdate(BaseModel):
     config: dict
     context: Optional[dict] = None
 
+import hashlib
+import json
+
+def generate_config_hash(config: dict) -> str:
+    """Generate SHA256 hash of config for version tracking"""
+    config_str = json.dumps(config, sort_keys=True)
+    return hashlib.sha256(config_str.encode()).hexdigest()[:16]
+
 @router.patch("/{ind_id}/config")
 def update_indicator_config(ind_id: str, payload: IndicatorConfigUpdate, db: Session = Depends(get_db)):
     # 1. Fetch Indicator with Bot relationship
@@ -93,12 +101,25 @@ def update_indicator_config(ind_id: str, payload: IndicatorConfigUpdate, db: Ses
                 detail=f"Cannot update indicator '{ind.name}': Bound bot '{bot.name}' is currently RUNNING."
             )
 
-    # 3. Update Configuration
-    # We replace the params entirely with the new config state (Snapshot approach)
+    # 3. Store old hash for comparison
+    old_hash = ind.config_hash
+    
+    # 4. Update Configuration
     ind.params = payload.config
+    
+    # 5. Generate new config hash
+    new_hash = generate_config_hash(payload.config)
+    ind.config_hash = new_hash
     
     # Note: updated_at is handled by SQLAlchemy onupdate
     
     db.commit()
     db.refresh(ind)
-    return ind
+    
+    # 6. Return with invalidation flag
+    return {
+        "indicator": ind,
+        "config_hash": new_hash,
+        "config_changed": old_hash != new_hash,
+        "message": "Config updated. Backtest cache should be invalidated." if old_hash != new_hash else "No change detected."
+    }
