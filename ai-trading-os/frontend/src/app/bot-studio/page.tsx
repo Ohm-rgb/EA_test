@@ -319,9 +319,9 @@ export default function BotStudio() {
     const addRule = () => {
         const newRule: BotRule = {
             id: Date.now(),
-            indicator: 'RSI',
-            operator: 'crosses_above',
-            value: 50,
+            indicator: activeIndicators.length > 0 ? activeIndicators[0].id : '',
+            operator: 'signal',
+            value: 0,
             action: 'Buy',
             isEnabled: true,
         };
@@ -553,56 +553,41 @@ export default function BotStudio() {
                                                                 {/* IF Segment */}
                                                                 <span className="logic-tag tag-if">IF</span>
 
-                                                                <div className="relative">
+                                                                <div className="relative min-w-[200px]">
                                                                     <select
                                                                         value={rule.indicator}
                                                                         onChange={(e) => updateRule(rule.id, 'indicator', e.target.value)}
                                                                         className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-10"
                                                                     >
                                                                         {activeIndicators.map(ind => (
-                                                                            <option key={ind.id} value={ind.type}>{ind.type} {ind.period > 0 ? `(${ind.period})` : ''}</option>
+                                                                            <option key={ind.id} value={ind.id}>
+                                                                                {ind.type} {ind.period > 0 ? `(${ind.period})` : ''} - {ind.source}
+                                                                            </option>
                                                                         ))}
                                                                     </select>
-                                                                    <div className="logic-block block-trigger">
-                                                                        {rule.indicator === 'Price' ? '💲' : '📈'} {rule.indicator}
-                                                                    </div>
-                                                                </div>
-
-                                                                <div className="relative">
-                                                                    <select
-                                                                        value={rule.operator}
-                                                                        onChange={(e) => updateRule(rule.id, 'operator', e.target.value)}
-                                                                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-10"
-                                                                    >
-                                                                        {operators.map(op => <option key={op} value={op}>{op.replace('_', ' ')}</option>)}
-                                                                    </select>
-                                                                    <div className="logic-block block-operator">
-                                                                        {rule.operator === 'crosses_above' ? '↗️ Crosses Above' :
-                                                                            rule.operator === 'crosses_below' ? '↘️ Crosses Below' :
-                                                                                rule.operator === 'greater_than' ? '> Greater Than' :
-                                                                                    rule.operator === 'less_than' ? '< Less Than' : '= Equals'}
-                                                                    </div>
-                                                                </div>
-
-                                                                <div className="relative">
-                                                                    <input
-                                                                        type="number"
-                                                                        value={rule.value}
-                                                                        onChange={(e) => updateRule(rule.id, 'value', Number(e.target.value))}
-                                                                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-10"
-                                                                    />
-                                                                    <div className="logic-block block-value">
-                                                                        {rule.value}
+                                                                    <div className="logic-block block-trigger flex items-center justify-between gap-4">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span>{rule.indicator === 'Price' ? '💲' : '📈'}</span>
+                                                                            {/* Lookup name from activeIndicators */}
+                                                                            <span>
+                                                                                {activeIndicators.find(i => i.id === rule.indicator)?.type || rule.indicator}
+                                                                            </span>
+                                                                        </div>
+                                                                        {/* Configured Badge */}
+                                                                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-500 uppercase tracking-wider">
+                                                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                                                            Active
+                                                                        </div>
                                                                     </div>
                                                                 </div>
 
                                                                 {/* Arrow */}
-                                                                <span className="logic-arrow">→</span>
+                                                                <span className="logic-arrow mx-2 text-[var(--text-muted)]">→</span>
 
                                                                 {/* THEN Segment */}
                                                                 <span className="logic-tag tag-then">THEN</span>
 
-                                                                <div className="relative">
+                                                                <div className="relative min-w-[140px]">
                                                                     <select
                                                                         value={rule.action}
                                                                         onChange={(e) => updateRule(rule.id, 'action', e.target.value)}

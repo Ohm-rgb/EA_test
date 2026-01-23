@@ -1,15 +1,39 @@
-export interface IndicatorCapability {
+export type ControlType = 'toggle' | 'select' | 'number' | 'color' | 'signal';
+
+export interface BaseControl {
     id: string;
-    name: string;
-    version: string;
-    sections: Section[];
+    label: string;
+    description?: string;
+    bind: string; // key mapping to indicator.config
 }
 
-export interface Section {
-    id: string;
-    title: string;
-    description?: string;
-    controls: Control[];
+export interface ToggleControl extends BaseControl {
+    type: 'toggle';
+    default: boolean;
+}
+
+export interface SelectControl extends BaseControl {
+    type: 'select';
+    options: { label: string; value: string }[];
+    default: string;
+}
+
+export interface NumberControl extends BaseControl {
+    type: 'number';
+    min?: number;
+    max?: number;
+    step?: number;
+    default: number;
+}
+
+export interface ColorControl extends BaseControl {
+    type: 'color';
+    default: string;
+}
+
+export interface SignalControl extends BaseControl {
+    type: 'signal';
+    actions: ('Buy' | 'Sell' | 'Close')[];
 }
 
 export type Control =
@@ -19,43 +43,15 @@ export type Control =
     | ColorControl
     | SignalControl;
 
-interface BaseControl {
+export interface Section {
     id: string;
-    label: string;
+    title: string;
     description?: string;
-    visibleWhen?: {
-        controlId: string;
-        equals: any;
-    };
+    controls: Control[];
 }
 
-export interface ToggleControl extends BaseControl {
-    type: 'toggle';
-    defaultValue: boolean;
-}
-
-export interface SelectControl extends BaseControl {
-    type: 'select';
-    defaultValue: string;
-    options: { label: string; value: string }[];
-}
-
-export interface NumberControl extends BaseControl {
-    type: 'number';
-    defaultValue: number;
-    min?: number;
-    max?: number;
-    step?: number;
-}
-
-export interface ColorControl extends BaseControl {
-    type: 'color';
-    defaultValue: string;
-}
-
-export interface SignalControl extends BaseControl {
-    type: 'signal';
-    actionMap?: {
-        onTrigger?: 'Buy' | 'Sell' | 'Signal';
-    };
+export interface IndicatorCapability {
+    id: string;
+    ui_version: string;
+    sections: Section[];
 }

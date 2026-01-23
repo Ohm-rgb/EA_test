@@ -42,6 +42,7 @@ class StrategyPackage(Base):
     bot_id = Column(String, ForeignKey("bots.id"), nullable=True)
     
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     bot = relationship("Bot", back_populates="indicators")
     rules = relationship("BotRule", back_populates="indicator")

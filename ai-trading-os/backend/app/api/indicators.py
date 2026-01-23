@@ -73,19 +73,31 @@ def update_indicator_status(ind_id: str, status: str, db: Session = Depends(get_
     db.commit()
     return ind
 
-@router.put("/{ind_id}/config")
-def update_indicator_config(ind_id: str, config: dict, db: Session = Depends(get_db)):
+class IndicatorConfigUpdate(BaseModel):
+    config: dict
+    context: Optional[dict] = None
+
+@router.patch("/{ind_id}/config")
+def update_indicator_config(ind_id: str, payload: IndicatorConfigUpdate, db: Session = Depends(get_db)):
+    # 1. Fetch Indicator with Bot relationship
     ind = db.query(models.StrategyPackage).filter(models.StrategyPackage.id == ind_id).first()
     if not ind:
         raise HTTPException(status_code=404, detail="Indicator not found")
     
-    # Update params
-    # Note: For SQLite/SQLAlchemy, we might need to flag the field as modified if it's a JSON type,
-    # but replacing the dict usually works. 
-    ind.params = config
+    # 2. Guard: Check Bound Bot Status
+    if ind.bot_id:
+        bot = db.query(models.Bot).filter(models.Bot.id == ind.bot_id).first()
+        if bot and bot.status == "running":
+             raise HTTPException(
+                status_code=409, 
+                detail=f"Cannot update indicator '{ind.name}': Bound bot '{bot.name}' is currently RUNNING."
+            )
+
+    # 3. Update Configuration
+    # We replace the params entirely with the new config state (Snapshot approach)
+    ind.params = payload.config
     
-    # Auto-update status to "ready" if it was "draft"? Or leave it to user?
-    # User might want to save draft. Let's keep status as is.
+    # Note: updated_at is handled by SQLAlchemy onupdate
     
     db.commit()
     db.refresh(ind)

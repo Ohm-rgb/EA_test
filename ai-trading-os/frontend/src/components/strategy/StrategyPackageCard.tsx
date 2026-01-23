@@ -9,6 +9,8 @@ interface StrategyPackageCardProps {
 }
 
 const statusConfig: Record<PackageStatus, { color: string; bg: string; label: string }> = {
+    draft: { color: 'text-gray-400', bg: 'bg-gray-500/10', label: 'Draft' },
+    ready: { color: 'text-blue-400', bg: 'bg-blue-500/20', label: 'Ready' },
     active: { color: 'text-emerald-400', bg: 'bg-emerald-500/20', label: 'Active' },
     partial: { color: 'text-amber-400', bg: 'bg-amber-500/20', label: 'Partial' },
     disabled: { color: 'text-gray-400', bg: 'bg-gray-500/20', label: 'Disabled' }

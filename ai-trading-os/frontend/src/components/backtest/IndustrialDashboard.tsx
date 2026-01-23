@@ -16,7 +16,9 @@ import { BacktestSummaryPanel } from './BacktestSummaryPanel';
 import { EquityCurveChart } from './EquityCurveChart';
 import { IndicatorManagementPanel } from './IndicatorManagementPanel';
 import { IndicatorControlPanel } from './IndicatorControlPanel';
+import { IndicatorContextBar } from './IndicatorContextBar';
 import { SmartMoneyConceptsCapability } from '@/services/capabilities/smc';
+import { BotApi } from '@/services/botApi';
 
 interface IndustrialDashboardProps {
     strategyPackages: StrategyPackage[];
@@ -46,8 +48,6 @@ export function IndustrialDashboard({
         generateMockManagedIndicators()
     );
 
-    const [selectedIndicatorForConfig, setSelectedIndicatorForConfig] = useState<ManagedIndicator | null>(null);
-
     // Per-indicator distribution data (generated once)
     const [indicatorDistributions] = useState<IndicatorDistributionData[]>(() =>
         generateIndicatorDistributions(
@@ -55,18 +55,29 @@ export function IndustrialDashboard({
         )
     );
 
-    // Get active indicators
+    // Get active indicators (Used for filtering)
     const activeIndicators = useMemo(() =>
         managedIndicators.filter(ind => ind.status === 'active'),
         [managedIndicators]
     );
 
-    // Filter distributions by active indicators
-    const filteredDistributions = useMemo(() => {
-        const activeIds = activeIndicators.map(ind => ind.id);
+    // State for Global Context
+    const [activeContextId, setActiveContextId] = useState<string | null>(null);
 
-        if (activeIds.length === 0) {
-            // No active indicators - show all data (fallback)
+    // Derived: Selected Indicator Logic
+    const activeContextIndicator = useMemo(() =>
+        managedIndicators.find(i => i.id === activeContextId) || null,
+        [managedIndicators, activeContextId]
+    );
+
+    // Filter distributions/metrics based on Context
+    const filteredDistributions = useMemo(() => {
+        // If specific indicator selected, filter to it. Else show all active.
+        const targetIds = activeContextId
+            ? [activeContextId]
+            : activeIndicators.map(ind => ind.id); // Default to all ACTIVE indicators
+
+        if (targetIds.length === 0) {
             return {
                 dayOfWeek: backtestResult.dayOfWeekDistribution,
                 hourOfDay: backtestResult.hourOfDayDistribution,
@@ -74,20 +85,19 @@ export function IndustrialDashboard({
             };
         }
 
-        // Filter to only active indicators
         const activeDistributions = indicatorDistributions.filter(
-            d => activeIds.includes(d.indicatorId)
+            d => targetIds.includes(d.indicatorId)
         );
 
         if (activeDistributions.length === 0) {
             return {
                 dayOfWeek: backtestResult.dayOfWeekDistribution,
                 hourOfDay: backtestResult.hourOfDayDistribution,
-                sourceLabel: 'All Indicators'
+                sourceLabel: activeContextId ? 'Selected (No Data)' : 'All Indicators'
             };
         }
 
-        // Aggregate distributions from active indicators
+        // Aggregate 
         const aggregateDayOfWeek: Record<string, { count: number; winSum: number }> = {};
         const aggregateHourOfDay: Record<string, { count: number; winSum: number }> = {};
 
@@ -121,13 +131,12 @@ export function IndustrialDashboard({
             winRate: data.count > 0 ? Math.round((data.winSum / data.count) * 10) / 10 : 0
         }));
 
-        // Build source label
-        const sourceLabel = activeIndicators.length === 1
-            ? activeIndicators[0].name
+        const sourceLabel = activeContextId
+            ? (managedIndicators.find(i => i.id === activeContextId)?.name || 'Unknown')
             : `${activeIndicators.length} Active Indicators`;
 
         return { dayOfWeek, hourOfDay, sourceLabel };
-    }, [activeIndicators, indicatorDistributions, backtestResult]);
+    }, [activeContextId, activeIndicators, indicatorDistributions, backtestResult, managedIndicators]);
 
     // Handle indicator status change (explicit user action only)
     const handleStatusChange = (indicatorId: string, newStatus: IndicatorStatus) => {
@@ -140,85 +149,113 @@ export function IndustrialDashboard({
         );
     };
 
-    // Handle configure indicator
+    // Handle configure indicator (List click adapter)
     const handleConfigure = (indicator: ManagedIndicator) => {
-        setSelectedIndicatorForConfig(indicator);
+        setActiveContextId(indicator.id);
         if (onIndicatorConfigure) {
             onIndicatorConfigure(indicator);
         }
     };
 
     return (
-        <div className="h-full flex flex-col gap-4 p-6 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-2 duration-300 relative">
-            {/* Corner Status Badge - System Indicator */}
-            <div className="absolute top-2 right-3 flex items-center gap-2 text-[10px] text-[var(--text-muted)] opacity-60">
-                {strategyPackages.length > 0 && (
-                    <span>Pkg: {strategyPackages.length}</span>
-                )}
-                <span className="text-[var(--color-success)]">
-                    ● {managedIndicators.filter(i => i.status === 'active').length}/{managedIndicators.length}
-                </span>
+        <div className="h-full flex flex-col bg-[var(--bg-primary)]">
+            {/* 1. Control Desk Header (Indicator Context) */}
+            <div className="flex-none z-10">
+                <IndicatorContextBar
+                    indicators={managedIndicators}
+                    activeIndicatorId={activeContextId}
+                    onSelect={setActiveContextId}
+                    onImport={() => onImportIndicator && onImportIndicator()}
+                />
             </div>
 
-            {/* Main Grid Layout - Industrial Style */}
-            <div className="flex-1 min-h-0 grid grid-cols-12 gap-4">
-                {/* Left Column - Metrics & Analysis */}
-                <div className="col-span-7 flex flex-col gap-4 min-h-0">
-                    {/* Backtest Summary Panel */}
+            {/* 2. Main Dashboard Grid */}
+            <div className="flex-1 min-h-0 grid grid-cols-12 gap-4 relative">
+
+                {/* Left Column: Metrics & Analysis (Scrollable) */}
+                <div className="col-span-7 flex flex-col min-h-0 border-r border-[var(--glass-border)] bg-[var(--bg-secondary)]/30 overflow-y-auto custom-scrollbar p-6 gap-6">
+
+                    {/* Backtest Summary (Context Aware) */}
                     <div className="flex-none">
-                        <BacktestSummaryPanel result={backtestResult} />
+                        {/* Mocking contextual data change by title/opacity for now */}
+                        <div className={`transition-opacity duration-300 ${activeContextId ? 'opacity-100' : 'opacity-90'}`}>
+                            <BacktestSummaryPanel result={backtestResult} />
+                        </div>
                     </div>
 
-                    {/* Equity Curve Chart */}
+                    {/* Equity Curve (Context Aware) */}
                     <div className="flex-none">
                         <EquityCurveChart
                             data={backtestResult.equityCurve}
-                            height={180}
+                            height={220}
                         />
                     </div>
 
-                    {/* Indicator Management Panel */}
-                    <div className="flex-1 min-h-0 overflow-hidden">
+                    {/* Management List (Keep for bulk view) */}
+                    <div className="flex-1 min-h-[300px]">
+                        <h4 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <span>📚</span> All Indicators Registry
+                        </h4>
                         <IndicatorManagementPanel
                             indicators={managedIndicators}
                             onStatusChange={handleStatusChange}
                             onConfigure={handleConfigure}
-                            onImportIndicator={onImportIndicator}
                         />
                     </div>
                 </div>
 
-                {/* Right Column - Indicator Control Panel */}
-                <div className="col-span-5 flex flex-col gap-4 min-h-0">
-                    {/* Control Panel Area */}
+                {/* Right Column: Control Panel (Context Driven) */}
+                <div className="col-span-5 flex flex-col bg-[var(--bg-secondary)] p-6 gap-6 overflow-y-auto custom-scrollbar">
+
+                    {/* Active Control Panel */}
                     <div className="flex-1 min-h-0 flex flex-col">
-                        {selectedIndicatorForConfig ? (
+                        {activeContextIndicator ? (
                             <IndicatorControlPanel
-                                indicatorId={selectedIndicatorForConfig.id}
+                                indicatorId={activeContextIndicator.id}
                                 capability={
-                                    // Dynamic capability mapping (Mock for now)
-                                    selectedIndicatorForConfig.name.includes('Smart Money')
+                                    activeContextIndicator.name.includes('Smart Money')
                                         ? SmartMoneyConceptsCapability
-                                        : { ...SmartMoneyConceptsCapability, name: selectedIndicatorForConfig.name, id: 'generic_cap' } // Fallback
+                                        : { ...SmartMoneyConceptsCapability, id: 'generic_cap' }
                                 }
                                 initialConfig={{}} // Would load from indicator.config
-                                onSave={() => {
-                                    // In real app, refetch/refresh 
-                                    console.log('Saved config for', selectedIndicatorForConfig.name);
+
+                                // Context Passing
+                                boundBotIds={activeContextIndicator.boundBotIds}
+                                indicatorStatus={activeContextIndicator.status}
+                                backtestHash={backtestResult.strategySnapshotHash}
+                                isBotRunning={backtestResult.botId === 'bot_running_mock'} // Mock running check
+
+                                onSave={async (payload) => {
+                                    try {
+                                        console.log('📦 Saving Indicator Config:', payload);
+                                        await BotApi.updateIndicatorConfig(payload.indicator_id, {
+                                            config: payload.config,
+                                            context: payload.context
+                                        });
+                                        // In a real app, use a Toast here. For now:
+                                        console.log("✅ Save confirmed by backend");
+                                        // Optional: Refresh indicators to update 'updated_at' or status
+                                    } catch (error: any) {
+                                        console.error("❌ Save Failed:", error);
+                                        alert(`Failed to save configuration: ${error.message || 'Unknown error'}`);
+                                    }
                                 }}
                             />
                         ) : (
-                            <div className="h-full flex flex-col items-center justify-center p-8 text-center border border-dashed border-[var(--glass-border)] rounded-xl bg-[var(--bg-secondary)]/50">
-                                <div className="text-4xl mb-4 opacity-20">⚙️</div>
-                                <h3 className="text-lg font-medium text-[var(--text-secondary)]">No Indicator Selected</h3>
-                                <p className="text-sm text-[var(--text-muted)] mt-2 max-w-[250px]">
-                                    Select an indicator from the list to configure its internal parameters and signals.
+                            // Empty State / Overview State
+                            <div className="h-full flex flex-col items-center justify-center p-8 text-center border border-dashed border-[var(--glass-border)] rounded-xl bg-[var(--bg-tertiary)]/30">
+                                <div className="p-4 rounded-full bg-[var(--bg-tertiary)] mb-4 animate-pulse">
+                                    <span className="text-4xl opacity-50">👆</span>
+                                </div>
+                                <h3 className="text-lg font-medium text-[var(--text-primary)]">Select Context to Configure</h3>
+                                <p className="text-sm text-[var(--text-muted)] mt-2 max-w-[280px]">
+                                    Use the <b>Context Bar</b> at the top or select from the list on the left to configure a specific indicator.
                                 </p>
                             </div>
                         )}
                     </div>
 
-                    {/* Quick Stats Panel (Kept for context, but reduced) */}
+                    {/* Quick Stats Panel */}
                     <div className="industrial-panel-sm flex-none">
                         <div className="flex justify-between items-center mb-3">
                             <h4 className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wider">

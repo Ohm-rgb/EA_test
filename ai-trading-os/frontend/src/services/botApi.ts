@@ -65,11 +65,11 @@ export const BotApi = {
         });
     },
 
-    async updateIndicatorConfig(id: string, config: any): Promise<any> {
+    async updateIndicatorConfig(id: string, payload: { config: any; context: any }): Promise<any> {
         return fetchJson<any>(`/indicators/${id}/config`, {
-            method: 'PUT',
+            method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(config)
+            body: JSON.stringify(payload)
         });
     },
 

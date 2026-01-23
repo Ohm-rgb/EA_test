@@ -10,7 +10,6 @@ interface IndicatorManagementPanelProps {
     indicators: ManagedIndicator[];
     onStatusChange: (indicatorId: string, newStatus: IndicatorStatus) => void;
     onConfigure: (indicator: ManagedIndicator) => void;
-    onImportIndicator?: () => void;  // Opens Pine Script Import modal
 }
 
 /**
@@ -23,8 +22,7 @@ interface IndicatorManagementPanelProps {
 export function IndicatorManagementPanel({
     indicators,
     onStatusChange,
-    onConfigure,
-    onImportIndicator
+    onConfigure
 }: IndicatorManagementPanelProps) {
 
     const getStatusBadge = (status: IndicatorStatus) => {
@@ -172,15 +170,6 @@ export function IndicatorManagementPanel({
                     </span>
                 </div>
                 <div className="flex items-center gap-3">
-                    {/* Import Button - Primary action in Industrial Control */}
-                    {onImportIndicator && (
-                        <button
-                            onClick={onImportIndicator}
-                            className="px-3 py-1.5 rounded text-xs font-medium bg-[var(--color-info)]/20 text-[var(--color-info)] border border-[var(--color-info)]/30 hover:bg-[var(--color-info)]/30 transition-all flex items-center gap-1.5"
-                        >
-                            <span>📥</span> Import & Register
-                        </button>
-                    )}
                     <span className="text-[10px] text-[var(--text-muted)]">⚠️ Configuration only</span>
                 </div>
             </div>

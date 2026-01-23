@@ -1,91 +1,82 @@
 import { IndicatorCapability } from "@/types/indicatorCapability";
 
 export const SmartMoneyConceptsCapability: IndicatorCapability = {
-    id: "smc_luxalgo",
-    name: "Smart Money Concepts",
-    version: "1.0.0",
+    id: "smc_pro_v1",
+    ui_version: "1.0.0",
     sections: [
         {
             id: "mode_settings",
             title: "Mode Settings",
+            description: "Configure how the indicator calculates structure",
             controls: [
                 {
                     id: "mode",
-                    label: "Calculation Mode",
+                    label: "Analysis Mode",
                     type: "select",
-                    defaultValue: "historical",
-                    description: "Choose between Historical (faster) or Realtime (updates on every tick)",
+                    bind: "mode",
                     options: [
-                        { label: "Historical", value: "historical" },
-                        { label: "Realtime", value: "realtime" }
-                    ]
+                        { label: "Historical (Repaint)", value: "historical" },
+                        { label: "Realtime (Confirmed Only)", value: "realtime" }
+                    ],
+                    default: "realtime"
+                },
+                {
+                    id: "swing_length",
+                    label: "Swing Structure Length",
+                    type: "number",
+                    bind: "swingLength",
+                    min: 3,
+                    max: 50,
+                    default: 5
                 }
             ]
         },
         {
             id: "internal_structure",
             title: "Internal Structure",
-            description: "Configure Break of Structure (BOS) and Change of Character (CHoCH)",
             controls: [
                 {
-                    id: "show_internal",
-                    label: "Show Internal Structure",
+                    id: "show_bos",
+                    label: "Show BOS",
                     type: "toggle",
-                    defaultValue: true
+                    bind: "showBos",
+                    default: true
                 },
                 {
-                    id: "bos_bull",
-                    label: "BOS Bullish Signal",
-                    type: "signal",
-                    actionMap: { onTrigger: "Buy" },
-                    visibleWhen: { controlId: "show_internal", equals: true }
+                    id: "show_choch",
+                    label: "Show CHoCH",
+                    type: "toggle",
+                    bind: "showChoch",
+                    default: true
                 },
                 {
-                    id: "bos_bear",
-                    label: "BOS Bearish Signal",
-                    type: "signal",
-                    actionMap: { onTrigger: "Sell" },
-                    visibleWhen: { controlId: "show_internal", equals: true }
+                    id: "color_bullish",
+                    label: "Bullish Color",
+                    type: "color",
+                    bind: "colorBull",
+                    default: "#00FF00"
                 }
             ]
         },
         {
-            id: "fvg",
+            id: "fvg_settings",
             title: "Fair Value Gaps",
             controls: [
                 {
-                    id: "enable_fvg",
+                    id: "show_fvg",
                     label: "Enable FVG",
                     type: "toggle",
-                    defaultValue: true
+                    bind: "showFvg",
+                    default: true
                 },
                 {
-                    id: "extend_fvg",
-                    label: "Extend FVG",
+                    id: "fvg_extend",
+                    label: "Extend FVG Box",
                     type: "number",
-                    defaultValue: 5,
-                    min: 1,
+                    bind: "fvgExtend",
+                    min: 0,
                     max: 50,
-                    visibleWhen: { controlId: "enable_fvg", equals: true }
-                }
-            ]
-        },
-        {
-            id: "zones",
-            title: "Premium / Discount Zones",
-            controls: [
-                {
-                    id: "show_pd_zones",
-                    label: "Show Zones",
-                    type: "toggle",
-                    defaultValue: false
-                },
-                {
-                    id: "zone_color",
-                    label: "Zone Color",
-                    type: "color",
-                    defaultValue: "#3b82f6",
-                    visibleWhen: { controlId: "show_pd_zones", equals: true }
+                    default: 10
                 }
             ]
         }
