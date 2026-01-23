@@ -15,6 +15,7 @@ import { sliceTradesByPeriod } from '@/utils/reliabilityMetrics';
 import { BacktestSummaryPanel } from './BacktestSummaryPanel';
 import { EquityCurveChart } from './EquityCurveChart';
 import { ReliabilityPanel } from './ReliabilityPanel';
+import { RiskAssessmentPanel } from './RiskAssessmentPanel';
 import { TradeDistributionChart } from './TradeDistributionChart';
 import { IndicatorManagementPanel } from './IndicatorManagementPanel';
 import { IndicatorControlPanel } from './IndicatorControlPanel';
@@ -206,6 +207,14 @@ export function IndustrialDashboard({
                         <ReliabilityPanel
                             periods={reliabilityPeriods}
                             isLoading={isLoadingData}
+                        />
+                    </div>
+
+                    {/* Risk Layer (Phase C3) */}
+                    <div className="flex-none">
+                        <RiskAssessmentPanel
+                            trades={trades}
+                            initialCapital={10000}
                         />
                     </div>
 

@@ -34,6 +34,21 @@ description: Development principles and best practices for code quality, workflo
   - Reference: [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
 - **Branch Management**: Use **Git Flow** for branch management (e.g., `feature/`, `bugfix/`, `release/`, `hotfix/`, `develop`, `main`).
 - **Security**: **NEVER** commit secrets (API keys, database tokens, passwords) to Git. Use environment variables.
+- **Manual Push Mode**: When user uses the command `commit & push`, agent MUST:
+  1. **NOT execute** `git` commands directly.
+  2. **Provide** the exact git commands for the user to run manually.
+  3. **List** all files that will be included in the commit.
+  - Example Output:
+    ```
+    📦 Files to commit:
+    - frontend/src/components/NewComponent.tsx (NEW)
+    - backend/app/models.py (MODIFIED)
+    
+    🔧 Commands to run:
+    git add .
+    git commit -m "feat(component): add new feature"
+    git push
+    ```
 
 ## 3. Architecture
 - **Tech Stack & Design**: 

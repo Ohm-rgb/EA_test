@@ -164,4 +164,19 @@ Timeline:
   - 21:30: Implemented Folder Layout metaphor with "Strategy" and "Backtesting" tabs.
   - 21:45: Refactored to Full-Viewport Workspace (h-screen, no margins).
   - 21:50: Fixed scrolling behavior to be panel-specific (no global scroll).
-Notes: Transformed Bot Studio from a card-based page to an application-grade workspace layout.
+Task: Indicator Control Panel UX Refinement
+Status: Completed
+Timeline:
+  - 21:00: Moved "Save" and "Reset" buttons to header for better accessibility.
+  - 21:10: Implemented "Lock Banner + Visible Disabled State" for active indicators.
+  - 21:15: Fixed TypeScript errors in frontend types.
+  - 21:20: Updated Backend CORS to explicitly allow localhost:3000 (Action Required).
+Notes: UX optimized for "Control-First" logic. CORS policy updated for better security/compatibility.
+
+Task: Visual Logic Builder Simplification
+Status: Completed
+Timeline:
+  - 21:30: Refactored Logic Builder to use "Clean Signal" pattern.
+  - 21:35: Removed redundant parameter inputs (Operator, Value) from rule builder.
+  - 21:40: Implemented "Active" badge to reference configured indicators.
+Notes: Logic Builder now cleaner, strictly acting as a composer for configured parts. Backend compatible.
