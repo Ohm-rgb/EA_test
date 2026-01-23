@@ -41,6 +41,24 @@ export default function BotStudio() {
     // -------------------------------------------------------------------------
     const [activeView, setActiveView] = useState<'overview' | 'machine' | 'performance'>('overview');
 
+    // Settings State (Lifted Up)
+    const [dashboardSettings, setDashboardSettings] = useState({
+        refreshRate: 5,
+        theme: 'industrial',
+        showFinancials: true,
+        // KPI Thresholds (OEE)
+        availabilityWarn: 90,
+        availabilityDanger: 80,
+        qualityWarn: 60,
+        qualityDanger: 40,
+        efficiencyWarn: 80,
+        efficiencyDanger: 60,
+        // Strategy Targets
+        targetProfit: 1000,
+        maxDrawdown: 500,
+        targetDailyTrades: 5
+    });
+
     // Multi-Bot State Management
     const [bots, setBots] = useState<Bot[]>([]);
     const [activeBotId, setActiveBotId] = useState<string>('');
@@ -264,6 +282,7 @@ export default function BotStudio() {
                         netProfit={activeBot ? 12450 : 0}
                         totalTrades={activeBot ? 142 : 0}
                         activeIndicators={activeIndicators}
+                        settings={dashboardSettings}
                     />
                 </div>
             )}
@@ -466,6 +485,9 @@ export default function BotStudio() {
                     />
                 </div>
             )}
+
+            {/* VIEW 4: SETTINGS (CONFIGURATION) */}
+
 
             <PineScriptImportModal
                 isOpen={isImportModalOpen}
