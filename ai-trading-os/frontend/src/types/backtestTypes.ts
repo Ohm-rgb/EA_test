@@ -114,6 +114,27 @@ export interface ManagedIndicator {
 }
 
 // ============================================================================
+// TRADE DATA
+// ============================================================================
+
+export interface Trade {
+    id: number;
+    ticket_number?: string;
+    symbol: string;
+    trade_type: 'buy' | 'sell';
+    lot_size: number;
+    open_price: number;
+    close_price?: number;
+    stop_loss?: number;
+    take_profit?: number;
+    profit?: number;
+    status: 'open' | 'closed' | 'cancelled';
+    source_indicator_id?: string;
+    opened_at: string; // ISO string from API
+    closed_at?: string; // ISO string from API
+}
+
+// ============================================================================
 // BACKTEST RESULT
 // ============================================================================
 

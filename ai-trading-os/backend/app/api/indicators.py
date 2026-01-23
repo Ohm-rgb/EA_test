@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from .. import models
-from ..core.database import get_db
+from app import models # Changed from relative .. import models
 from pydantic import BaseModel
 
 router = APIRouter(tags=["indicators"])

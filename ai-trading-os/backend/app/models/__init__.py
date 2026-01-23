@@ -5,13 +5,18 @@ from app.models.models import (
     User,
     Settings,
     BotProfile,
-    BotRule,
     Trade,
     Simulation,
     ErrorLog,
     AuditLog,
     AISession,
     AIMessage,
+)
+
+from app.models.bot import (
+    Bot,
+    StrategyPackage,
+    BotRule,
 )
 
 __all__ = [

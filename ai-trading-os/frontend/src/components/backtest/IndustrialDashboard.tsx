@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { StrategyPackage } from '@/types/strategyPackage';
 import {
     ManagedIndicator,
@@ -8,10 +8,9 @@ import {
     BacktestResult,
     TradeDistribution,
     IndicatorDistributionData,
-    generateMockBacktestResult,
     generateMockManagedIndicators,
-    generateIndicatorDistributions
 } from '@/types/backtestTypes';
+import { calculateBacktestMetrics } from '@/utils/backtestMetrics';
 import { BacktestSummaryPanel } from './BacktestSummaryPanel';
 import { EquityCurveChart } from './EquityCurveChart';
 import { TradeDistributionChart } from './TradeDistributionChart';
@@ -40,20 +39,15 @@ export function IndustrialDashboard({
     onIndicatorConfigure,
     onImportIndicator
 }: IndustrialDashboardProps) {
-    // Phase 1: Mock data (backend-ready interfaces)
-    const [backtestResult] = useState<BacktestResult>(() =>
-        generateMockBacktestResult('bot_alpha', 'AlphaBot')
-    );
+    // Phase C1: Real Data Binding
+    const [trades, setTrades] = useState<any[]>([]); // Using any for now to match API response, should be Trade[]
+    const [isLoadingData, setIsLoadingData] = useState(false);
+
+    // Single source of truth for BacktestResult (calculated from real trades)
+    const [backtestResult, setBacktestResult] = useState<BacktestResult | null>(null);
 
     const [managedIndicators, setManagedIndicators] = useState<ManagedIndicator[]>(() =>
         generateMockManagedIndicators()
-    );
-
-    // Per-indicator distribution data (generated once)
-    const [indicatorDistributions] = useState<IndicatorDistributionData[]>(() =>
-        generateIndicatorDistributions(
-            generateMockManagedIndicators().map(ind => ({ id: ind.id, name: ind.name }))
-        )
     );
 
     // Get active indicators (Used for filtering)
@@ -71,73 +65,57 @@ export function IndustrialDashboard({
         [managedIndicators, activeContextId]
     );
 
+    // Fetch Trades & Calculate Metrics whenever Context Changes
+    useEffect(() => {
+        async function fetchAndCalculate() {
+            setIsLoadingData(true);
+            try {
+                // Fetch trades filtered by context (or all if no context)
+                // Note: If no context, we might fetch 'all' trades. 
+                // For Phase C1, let's fetch all and filter client side OR fetch filtered?
+                // API supports filtering. Let's use API filtering for efficiency.
+
+                const tradeData = await BotApi.getTrades({
+                    sourceIndicatorId: activeContextId || undefined,
+                    limit: 1000 // Ensure we get enough history
+                });
+
+                setTrades(tradeData);
+
+                // Calculate real-time metrics
+                const metrics = calculateBacktestMetrics(
+                    tradeData,
+                    'bot_alpha', // TODO: Bind to real bot
+                    'AlphaBot',
+                    activeContextIndicator?.configHash || 'initial_hash'
+                );
+
+                setBacktestResult(metrics);
+
+            } catch (error) {
+                console.error("Failed to fetch backtest data:", error);
+            } finally {
+                setIsLoadingData(false);
+            }
+        }
+
+        fetchAndCalculate();
+    }, [activeContextId, activeContextIndicator?.configHash]); // Re-run if context or config changes
+
     // Filter distributions/metrics based on Context
+    // Now simply derived from the calculated backtestResult
     const filteredDistributions = useMemo(() => {
-        // If specific indicator selected, filter to it. Else show all active.
-        const targetIds = activeContextId
-            ? [activeContextId]
-            : activeIndicators.map(ind => ind.id); // Default to all ACTIVE indicators
+        if (!backtestResult) return null;
 
-        if (targetIds.length === 0) {
-            return {
-                dayOfWeek: backtestResult.dayOfWeekDistribution,
-                hourOfDay: backtestResult.hourOfDayDistribution,
-                sourceLabel: 'All Indicators'
-            };
-        }
+        return {
+            dayOfWeek: backtestResult.dayOfWeekDistribution,
+            hourOfDay: backtestResult.hourOfDayDistribution,
+            sourceLabel: activeContextIndicator ? activeContextIndicator.name : 'All Indicators'
+        };
+    }, [backtestResult, activeContextIndicator]);
 
-        const activeDistributions = indicatorDistributions.filter(
-            d => targetIds.includes(d.indicatorId)
-        );
-
-        if (activeDistributions.length === 0) {
-            return {
-                dayOfWeek: backtestResult.dayOfWeekDistribution,
-                hourOfDay: backtestResult.hourOfDayDistribution,
-                sourceLabel: activeContextId ? 'Selected (No Data)' : 'All Indicators'
-            };
-        }
-
-        // Aggregate 
-        const aggregateDayOfWeek: Record<string, { count: number; winSum: number }> = {};
-        const aggregateHourOfDay: Record<string, { count: number; winSum: number }> = {};
-
-        activeDistributions.forEach(dist => {
-            dist.dayOfWeekDistribution.forEach(d => {
-                if (!aggregateDayOfWeek[d.label]) {
-                    aggregateDayOfWeek[d.label] = { count: 0, winSum: 0 };
-                }
-                aggregateDayOfWeek[d.label].count += d.count;
-                aggregateDayOfWeek[d.label].winSum += d.winRate * d.count;
-            });
-
-            dist.hourOfDayDistribution.forEach(d => {
-                if (!aggregateHourOfDay[d.label]) {
-                    aggregateHourOfDay[d.label] = { count: 0, winSum: 0 };
-                }
-                aggregateHourOfDay[d.label].count += d.count;
-                aggregateHourOfDay[d.label].winSum += d.winRate * d.count;
-            });
-        });
-
-        const dayOfWeek: TradeDistribution[] = Object.entries(aggregateDayOfWeek).map(([label, data]) => ({
-            label,
-            count: data.count,
-            winRate: data.count > 0 ? Math.round((data.winSum / data.count) * 10) / 10 : 0
-        }));
-
-        const hourOfDay: TradeDistribution[] = Object.entries(aggregateHourOfDay).map(([label, data]) => ({
-            label,
-            count: data.count,
-            winRate: data.count > 0 ? Math.round((data.winSum / data.count) * 10) / 10 : 0
-        }));
-
-        const sourceLabel = activeContextId
-            ? (managedIndicators.find(i => i.id === activeContextId)?.name || 'Unknown')
-            : `${activeIndicators.length} Active Indicators`;
-
-        return { dayOfWeek, hourOfDay, sourceLabel };
-    }, [activeContextId, activeIndicators, indicatorDistributions, backtestResult, managedIndicators]);
+    // Aggregate 
+    // (Removed dead code)
 
     // Handle indicator status change (explicit user action only)
     const handleStatusChange = (indicatorId: string, newStatus: IndicatorStatus) => {
@@ -179,7 +157,7 @@ export function IndustrialDashboard({
                     {/* Backtest Summary (Context Aware) */}
                     <div className="flex-none">
                         {/* Context Badge */}
-                        {activeContextId && (
+                        {activeContextId && filteredDistributions && (
                             <div className="flex items-center gap-2 mb-2 animate-in fade-in slide-in-from-left-2 duration-300">
                                 <span className="text-[10px] text-[var(--color-accent)] bg-[var(--color-accent)]/10 px-2 py-0.5 rounded font-medium">
                                     📊 Filtered: {filteredDistributions.sourceLabel}
@@ -187,41 +165,46 @@ export function IndustrialDashboard({
                             </div>
                         )}
                         <div className={`transition-opacity duration-300 ${activeContextId ? 'opacity-100' : 'opacity-90'}`}>
-                            {/* isStale: true if active indicator's config hash differs from backtest snapshot hash */}
-                            <BacktestSummaryPanel
-                                result={backtestResult}
-                                isStale={
-                                    activeContextIndicator?.configHash !== undefined &&
-                                    activeContextIndicator.configHash !== backtestResult.strategySnapshotHash
-                                }
-                            />
+                            {backtestResult ? (
+                                <BacktestSummaryPanel
+                                    result={backtestResult}
+                                    isStale={
+                                        activeContextIndicator?.configHash !== undefined &&
+                                        activeContextIndicator.configHash !== backtestResult.strategySnapshotHash
+                                    }
+                                />
+                            ) : (
+                                <div className="h-48 flex items-center justify-center bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-border)]">
+                                    <span className="text-[var(--color-text-dim)] flex items-center gap-2">
+                                        <div className="w-4 h-4 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin"></div>
+                                        {isLoadingData ? 'Loading Backtest Data...' : 'No Data Available'}
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    {/* Equity Curve (Context Aware) */}
-                    <div className="flex-none">
-                        <EquityCurveChart
-                            data={backtestResult.equityCurve}
-                            height={220}
+                    {/* Equity Curve (Context Filtered) */}
+                    <div className="h-[400px]">
+                        {backtestResult ? (
+                            <EquityCurveChart
+                                data={backtestResult.equityCurve}
+                            />
+                        ) : null}
+                    </div>
+
+                    {/* Trade Distributions (Context Filtered) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <TradeDistributionChart
+                            title="Trade Distribution by Day"
+                            data={filteredDistributions?.dayOfWeek || []}
+                            sourceLabel={filteredDistributions?.sourceLabel}
                         />
-                    </div>
-
-                    {/* Trade Distribution Charts (Context-Filtered) */}
-                    <div className="flex-none">
-                        <div className="grid grid-cols-2 gap-4">
-                            <TradeDistributionChart
-                                title="Trade Distribution by Day"
-                                data={filteredDistributions.dayOfWeek}
-                                colorScheme="purple"
-                                sourceLabel={filteredDistributions.sourceLabel}
-                            />
-                            <TradeDistributionChart
-                                title="Trade Distribution by Hour"
-                                data={filteredDistributions.hourOfDay}
-                                colorScheme="cyan"
-                                sourceLabel={filteredDistributions.sourceLabel}
-                            />
-                        </div>
+                        <TradeDistributionChart
+                            title="Trade Distribution by Hour"
+                            data={filteredDistributions?.hourOfDay || []}
+                            sourceLabel={filteredDistributions?.sourceLabel}
+                        />
                     </div>
 
                     {/* Management List (Keep for bulk view) */}
@@ -255,8 +238,8 @@ export function IndustrialDashboard({
                                 // Context Passing
                                 boundBotIds={activeContextIndicator.boundBotIds}
                                 indicatorStatus={activeContextIndicator.status}
-                                backtestHash={backtestResult.strategySnapshotHash}
-                                isBotRunning={backtestResult.botId === 'bot_running_mock'} // Mock running check
+                                backtestHash={backtestResult?.strategySnapshotHash} // Safe access
+                                isBotRunning={backtestResult?.botId === 'bot_running_mock'} // Mock running check
 
                                 onSave={async (payload) => {
                                     try {
@@ -288,30 +271,32 @@ export function IndustrialDashboard({
                         )}
                     </div>
 
-                    {/* Quick Stats Panel */}
-                    <div className="industrial-panel-sm flex-none">
-                        <div className="flex justify-between items-center mb-3">
-                            <h4 className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wider">
-                                Test Period Details
-                            </h4>
-                            <span className="text-[10px] text-[var(--color-accent)]">{backtestResult.testPeriod.start.toLocaleDateString()} - {backtestResult.testPeriod.end.toLocaleDateString()}</span>
-                        </div>
+                    {/* Quick Stats Panel (Only show if data exists) */}
+                    {backtestResult && (
+                        <div className="industrial-panel-sm flex-none">
+                            <div className="flex justify-between items-center mb-3">
+                                <h4 className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wider">
+                                    Test Period Details
+                                </h4>
+                                <span className="text-[10px] text-[var(--color-accent)]">{backtestResult.testPeriod.start.toLocaleDateString()} - {backtestResult.testPeriod.end.toLocaleDateString()}</span>
+                            </div>
 
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <div className="text-[10px] text-[var(--text-muted)]">Win Rate</div>
-                                <div className="text-sm font-medium text-[var(--color-success)]">
-                                    {Math.round((backtestResult.winningTrades / backtestResult.totalTrades) * 100)}%
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <div className="text-[10px] text-[var(--text-muted)]">Win Rate</div>
+                                    <div className="text-sm font-medium text-[var(--color-success)]">
+                                        {Math.round((backtestResult.winningTrades / backtestResult.totalTrades) * 100)}%
+                                    </div>
                                 </div>
-                            </div>
-                            <div>
-                                <div className="text-[10px] text-[var(--text-muted)]">Net Profit</div>
-                                <div className={`text-sm font-medium ${backtestResult.netProfit >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-critical)]'}`}>
-                                    ${backtestResult.netProfit.toLocaleString()}
+                                <div>
+                                    <div className="text-[10px] text-[var(--text-muted)]">Net Profit</div>
+                                    <div className={`text-sm font-medium ${backtestResult.netProfit >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-critical)]'}`}>
+                                        ${backtestResult.netProfit.toLocaleString()}
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Control Layer Notice */}
                     <div className="industrial-panel-sm bg-amber-500/5 border-amber-500/20 flex-none">
@@ -321,14 +306,13 @@ export function IndustrialDashboard({
                                 <h4 className="text-xs font-medium text-amber-400">
                                     Control Layer Only
                                 </h4>
-                                <p className="text-[10px] text-[var(--text-muted)] mt-1">
-                                    This dashboard is for configuration and binding. Live execution happens in Bot Control panel.
-                                </p>
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>
     );
+
 }
