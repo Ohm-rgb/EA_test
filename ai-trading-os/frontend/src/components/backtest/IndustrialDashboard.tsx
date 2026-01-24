@@ -11,6 +11,8 @@ import {
     generateMockManagedIndicators,
 } from '@/types/backtestTypes';
 import { calculateBacktestMetrics } from '@/utils/backtestMetrics';
+import { mapPackageToIndicator } from '@/utils/strategyMapper';
+
 import { sliceTradesByPeriod } from '@/utils/reliabilityMetrics';
 import { BacktestSummaryPanel } from './BacktestSummaryPanel';
 import { EquityCurveChart } from './EquityCurveChart';
@@ -25,74 +27,68 @@ import { BotApi } from '@/services/botApi';
 
 interface IndustrialDashboardProps {
     strategyPackages: StrategyPackage[];
+    activeIndicatorId?: string | null;  // New Prop
     onIndicatorConfigure?: (indicator: ManagedIndicator) => void;
-    onImportIndicator?: () => void;  // Opens Pine Script Import modal
+    onImportIndicator?: () => void;
 }
 
-/**
- * Industrial Dashboard - Post-conversion control layer
- * Decision console for Backtesting & Indicator Management
- * 
- * @responsibility Import → Configure → Activate indicators
- * @gate Only Active indicators visible in Strategy Configuration
- * @important No live execution from this page
- */
+
 export function IndustrialDashboard({
     strategyPackages,
+    activeIndicatorId,
     onIndicatorConfigure,
     onImportIndicator
 }: IndustrialDashboardProps) {
     // Phase C1: Real Data Binding
-    const [trades, setTrades] = useState<any[]>([]); // Using any for now to match API response, should be Trade[]
+    const [trades, setTrades] = useState<any[]>([]);
     const [isLoadingData, setIsLoadingData] = useState(false);
-
-    // Single source of truth for BacktestResult (calculated from real trades)
     const [backtestResult, setBacktestResult] = useState<BacktestResult | null>(null);
 
-    const [managedIndicators, setManagedIndicators] = useState<ManagedIndicator[]>(() =>
-        generateMockManagedIndicators()
-    );
 
-    // Get active indicators (Used for filtering)
-    const activeIndicators = useMemo(() =>
-        managedIndicators.filter(ind => ind.status === 'active'),
-        [managedIndicators]
-    );
+    // State: Managed Indicators (Mapped from StrategyPackages)
+    const [managedIndicators, setManagedIndicators] = useState<ManagedIndicator[]>([]);
+
+    // Sync StrategyPackages -> ManagedIndicators
+    useEffect(() => {
+        const mapped = strategyPackages.map(pkg => mapPackageToIndicator(pkg));
+        setManagedIndicators(mapped);
+    }, [strategyPackages]);
 
     // State for Global Context
     const [activeContextId, setActiveContextId] = useState<string | null>(null);
 
-    // Derived: Selected Indicator Logic
+    // Sync Prop -> Internal State
+    useEffect(() => {
+        if (activeIndicatorId) {
+            setActiveContextId(activeIndicatorId);
+        }
+    }, [activeIndicatorId]);
+
+    // Active Context Object
     const activeContextIndicator = useMemo(() =>
         managedIndicators.find(i => i.id === activeContextId) || null,
         [managedIndicators, activeContextId]
     );
+
+    // ... (Keep existing data fetching logic)
 
     // Fetch Trades & Calculate Metrics whenever Context Changes
     useEffect(() => {
         async function fetchAndCalculate() {
             setIsLoadingData(true);
             try {
-                // Fetch trades filtered by context (or all if no context)
-                // Note: If no context, we might fetch 'all' trades. 
-                // For Phase C1, let's fetch all and filter client side OR fetch filtered?
-                // API supports filtering. Let's use API filtering for efficiency.
-
                 const tradeData = await BotApi.getTrades({
                     sourceIndicatorId: activeContextId || undefined,
-                    limit: 1000 // Ensure we get enough history
+                    limit: 1000
                 });
-
                 setTrades(tradeData);
 
-                // Calculate real-time metrics
                 const metrics = calculateBacktestMetrics(
                     tradeData,
-                    'bot_alpha', // TODO: Bind to real bot
+                    'bot_alpha',
                     'AlphaBot',
                     activeContextIndicator?.configHash || 'initial_hash'
                 );
-
                 setBacktestResult(metrics);
 
             } catch (error) {
@@ -103,13 +99,11 @@ export function IndustrialDashboard({
         }
 
         fetchAndCalculate();
-    }, [activeContextId, activeContextIndicator?.configHash]); // Re-run if context or config changes
+    }, [activeContextId, activeContextIndicator?.configHash]);
 
-    // Filter distributions/metrics based on Context
-    // Now simply derived from the calculated backtestResult
+    // ... (Keep filteredDistributions and reliabilityPeriods logic)
     const filteredDistributions = useMemo(() => {
         if (!backtestResult) return null;
-
         return {
             dayOfWeek: backtestResult.dayOfWeekDistribution,
             hourOfDay: backtestResult.hourOfDayDistribution,
@@ -117,14 +111,10 @@ export function IndustrialDashboard({
         };
     }, [backtestResult, activeContextIndicator]);
 
-    // Calculate Reliability Periods (Weekly Slicing) - Phase C2
     const reliabilityPeriods = useMemo(() => {
         if (!trades || trades.length === 0) return [];
         return sliceTradesByPeriod(trades, 'week');
     }, [trades]);
-
-    // Aggregate 
-    // (Removed dead code)
 
     // Handle indicator status change (explicit user action only)
     const handleStatusChange = (indicatorId: string, newStatus: IndicatorStatus) => {
@@ -137,13 +127,14 @@ export function IndustrialDashboard({
         );
     };
 
-    // Handle configure indicator (List click adapter)
+    // Handle configure
     const handleConfigure = (indicator: ManagedIndicator) => {
         setActiveContextId(indicator.id);
         if (onIndicatorConfigure) {
             onIndicatorConfigure(indicator);
         }
     };
+
 
     return (
         <div className="h-full flex flex-col bg-[var(--bg-primary)]">

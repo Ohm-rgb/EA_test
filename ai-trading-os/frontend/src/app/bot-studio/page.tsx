@@ -69,6 +69,7 @@ export default function BotStudio() {
     const [activeIndicators, setActiveIndicators] = useState<Indicator[]>([]);
     const [strategyPackages, setStrategyPackages] = useState<StrategyPackage[]>([]);
     const [configurePackage, setConfigurePackage] = useState<StrategyPackage | null>(null);
+    const [activeIndicatorId, setActiveIndicatorId] = useState<string | null>(null);
 
     // Modals
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -219,7 +220,12 @@ export default function BotStudio() {
                     ...strategy.package,
                     id: strategy.package.id || `pkg_${Date.now()}`,
                     status: 'draft',
-                    bot_id: activeBotId
+                    bot_id: activeBotId,
+                    // Schema Adapters for Backend (IndicatorCreate)
+                    source: strategy.package.sourceScript || 'manual', // Map sourceScript -> source
+                    period: 0, // Default period (backend required int)
+                    params: {}, // Default params
+                    type: 'pine_script' // Enforce type
                 };
                 await BotApi.createIndicator(pkgToCreate);
                 // Refresh
@@ -227,7 +233,11 @@ export default function BotStudio() {
                 setStrategyPackages(inds);
                 // Auto switch to performance view to manage it
                 setActiveView('performance');
-            } catch (err) { console.error(err); }
+                setActiveIndicatorId(pkgToCreate.id); // Auto-select the new indicator
+            } catch (err: any) {
+                console.error("Strategy Import Failed:", err);
+                alert(`Failed to import strategy: ${err.message || 'Unknown error'}. Please try again.`);
+            }
         } else {
             // Legacy handling
             setViewMode('logic');
@@ -476,6 +486,7 @@ export default function BotStudio() {
                 <div className="h-full animate-in fade-in duration-300">
                     <IndustrialDashboard
                         strategyPackages={strategyPackages}
+                        activeIndicatorId={activeIndicatorId}
                         onIndicatorConfigure={(managedInd) => {
                             // Find package and open modal
                             const pkg = strategyPackages.find(p => p.id === managedInd.id);

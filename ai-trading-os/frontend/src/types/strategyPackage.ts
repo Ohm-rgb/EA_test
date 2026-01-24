@@ -6,8 +6,8 @@
  * @gate Only 'active' packages visible in Strategy Configuration
  */
 
-// Control-First workflow: draft → ready → active → (partial) → disabled
-export type PackageStatus = 'draft' | 'ready' | 'active' | 'partial' | 'disabled';
+// Control-First workflow: draft → ready → active → (partial) → disabled → paused → archived
+export type PackageStatus = 'draft' | 'ready' | 'active' | 'partial' | 'disabled' | 'paused' | 'archived';
 
 /**
  * Single sub-rule within a Strategy Package

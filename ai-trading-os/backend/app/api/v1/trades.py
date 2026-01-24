@@ -48,8 +48,7 @@ async def list_trades(
     symbol: Optional[str] = Query(None, description="Filter by symbol"),
     source_indicator_id: Optional[str] = Query(None, description="Filter by source indicator (for backtest context)"),
     limit: int = Query(50, ge=1, le=200),
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """List trades with optional filters (context-aware for backtest)"""
     query = db.query(Trade)

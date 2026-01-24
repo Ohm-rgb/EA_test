@@ -20,16 +20,18 @@
  * 
  * @important NEVER auto-jump from ready → active
  */
-export type IndicatorStatus = 'draft' | 'ready' | 'active' | 'disabled';
+export type IndicatorStatus = 'draft' | 'ready' | 'active' | 'paused' | 'archived' | 'disabled';
 
 /**
  * Valid status transitions - enforced by state machine
  */
 export const VALID_STATUS_TRANSITIONS: Record<IndicatorStatus, IndicatorStatus[]> = {
-    draft: ['ready'],           // Requires test result
-    ready: ['active'],          // Requires explicit user action
-    active: ['disabled'],       // Requires explicit user action
-    disabled: ['ready'],        // Requires re-test
+    draft: ['ready', 'archived'],           // Can be archived if abandoned
+    ready: ['active', 'archived'],          // Can be activated or archived
+    active: ['paused', 'disabled', 'archived'], // Can be paused (kill switch) or disabled/archived
+    paused: ['active', 'archived'],         // Can resume or archive
+    disabled: ['ready', 'archived'],        // Requires re-test or archive
+    archived: ['draft'],                    // Restore to draft for re-evaluation
 };
 
 /**

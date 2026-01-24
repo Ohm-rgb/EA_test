@@ -50,16 +50,16 @@ export function calculateBacktestMetrics(
             maxEquity = currentEquity;
         }
 
-        const drawdownValue = maxEquity - currentEquity;
-        const drawdownPercent = (drawdownValue / maxEquity) * 100;
-
-        if (drawdownValue > maxDrawdownValue) maxDrawdownValue = drawdownValue;
-        if (drawdownPercent > maxDrawdownPercent) maxDrawdownPercent = drawdownPercent;
+        if (maxEquity > 0) {
+            const drawdownValue = maxEquity - currentEquity;
+            maxDrawdownPercent = Math.max(maxDrawdownPercent, (drawdownValue / maxEquity) * 100);
+            maxDrawdownValue = Math.max(maxDrawdownValue, drawdownValue);
+        }
 
         equityCurve.push({
             timestamp: new Date(trade.closed_at || trade.opened_at),
             equity: Number(currentEquity.toFixed(2)),
-            drawdown: Number(drawdownPercent.toFixed(2))
+            drawdown: Number(maxDrawdownPercent.toFixed(2))
         });
     });
 

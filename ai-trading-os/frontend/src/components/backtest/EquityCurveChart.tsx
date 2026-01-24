@@ -16,7 +16,17 @@ export function EquityCurveChart({ data, height = 200 }: EquityCurveChartProps) 
     const svgRef = useRef<SVGSVGElement>(null);
 
     useEffect(() => {
-        if (!svgRef.current || data.length === 0) return;
+        if (!svgRef.current) return;
+
+        // Handle empty or insufficient data
+        if (data.length === 0) {
+            const svg = svgRef.current;
+            const lineElement = svg.querySelector('.equity-line') as SVGPathElement;
+            const areaElement = svg.querySelector('.equity-area') as SVGPathElement;
+            if (lineElement) lineElement.setAttribute('d', '');
+            if (areaElement) areaElement.setAttribute('d', '');
+            return;
+        }
 
         const svg = svgRef.current;
         const rect = svg.getBoundingClientRect();
@@ -24,12 +34,22 @@ export function EquityCurveChart({ data, height = 200 }: EquityCurveChartProps) 
         const chartHeight = height - 30; // Leave room for axis
 
         // Calculate scaling
-        const minEquity = Math.min(...data.map(d => d.equity));
-        const maxEquity = Math.max(...data.map(d => d.equity));
-        const range = maxEquity - minEquity || 1;
+        const equities = data.map(d => d.equity);
+        const minEquity = Math.min(...equities);
+        const maxEquity = Math.max(...equities);
+        const range = maxEquity - minEquity;
+        const safeRange = range === 0 ? 1 : range; // Prevent division by zero
 
-        const xScale = (i: number) => (i / (data.length - 1)) * width;
-        const yScale = (v: number) => chartHeight - ((v - minEquity) / range) * (chartHeight - 20);
+        const xScale = (i: number) => {
+            if (data.length <= 1) return width / 2; // Center single point
+            return (i / (data.length - 1)) * width;
+        };
+
+        const yScale = (v: number) => {
+            // If flat line (range=0), center it vertically
+            if (range === 0) return chartHeight / 2;
+            return chartHeight - ((v - minEquity) / safeRange) * (chartHeight - 20);
+        };
 
         // Build path
         let linePath = `M ${xScale(0)} ${yScale(data[0].equity)}`;
@@ -40,7 +60,12 @@ export function EquityCurveChart({ data, height = 200 }: EquityCurveChartProps) 
             areaPath += ` L ${xScale(i)} ${yScale(data[i].equity)}`;
         }
 
-        areaPath += ` L ${xScale(data.length - 1)} ${chartHeight} Z`;
+        if (data.length > 1) {
+            areaPath += ` L ${xScale(data.length - 1)} ${chartHeight} Z`;
+        } else {
+            // Close single point area for validity (vertical line down)
+            areaPath += ` L ${xScale(0)} ${chartHeight} Z`;
+        }
 
         // Update paths
         const lineElement = svg.querySelector('.equity-line') as SVGPathElement;
