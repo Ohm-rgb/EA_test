@@ -8,9 +8,12 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ activeView, onViewChange, children }: DashboardLayoutProps) {
     // Real-time Clock
-    const [time, setTime] = useState(new Date());
+    const [time, setTime] = useState<Date | null>(null);
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        setMounted(true);
+        setTime(new Date());
         const timer = setInterval(() => setTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
@@ -84,10 +87,10 @@ export function DashboardLayout({ activeView, onViewChange, children }: Dashboar
                     {/* Clock */}
                     <div className="text-right">
                         <div className="text-lg font-mono font-bold text-white leading-none">
-                            {formatTime(time)}
+                            {mounted && time ? formatTime(time) : "00:00:00"}
                         </div>
                         <div className="text-[10px] text-slate-400 font-mono uppercase text-right mt-0.5">
-                            {formatDate(time)}
+                            {mounted && time ? formatDate(time) : "Loading..."}
                         </div>
                     </div>
                 </div>

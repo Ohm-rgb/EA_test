@@ -98,12 +98,12 @@ class BotProfile(Base):
     
     # Relationships
     user = relationship("User", back_populates="bot_profiles")
-    rules = relationship("BotRule", back_populates="bot_profile", cascade="all, delete-orphan")
+    rules = relationship("ProfileBotRule", back_populates="bot_profile", cascade="all, delete-orphan")
     trades = relationship("Trade", back_populates="bot_profile")
     simulations = relationship("Simulation", back_populates="bot_profile")
 
 
-class BotRule(Base):
+class ProfileBotRule(Base):
     """Bot trading rules (If-Then logic)"""
     __tablename__ = "bot_rules"
     
