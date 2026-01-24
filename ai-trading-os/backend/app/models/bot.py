@@ -8,6 +8,7 @@ class Bot(Base):
     __tablename__ = "bots"
 
     id = Column(String, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
     name = Column(String, index=True)
     status = Column(String, default="draft")  # draft, active, running, paused
     
@@ -26,6 +27,7 @@ class StrategyPackage(Base):
     __tablename__ = "indicators"
 
     id = Column(String, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
     name = Column(String) # Display name
     type = Column(String, index=True)  # RSI, EMA, etc.
     source = Column(String)  # Close, Open, etc.

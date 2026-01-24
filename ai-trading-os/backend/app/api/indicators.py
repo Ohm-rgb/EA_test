@@ -1,45 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from app import models # Changed from relative .. import models
-from app.core.database import get_db
+from app.core import get_current_user # Added import
 
-from pydantic import BaseModel
-
-router = APIRouter(tags=["indicators"])
-
-class IndicatorBase(BaseModel):
-    name: str
-    type: str
-    source: str
-    period: int
-    params: dict = {}
-    status: str = "draft"
-    bot_id: Optional[str] = None
-
-class IndicatorCreate(IndicatorBase):
-    id: str
-
-class RuleSchema(BaseModel):
-    id: int
-    operator: str
-    value: int
-    action: str
-    is_enabled: bool
-
-    class Config:
-        orm_mode = True
-
-class IndicatorResponse(IndicatorBase):
-    id: str
-    rules: List[RuleSchema] = []
-
-    class Config:
-        orm_mode = True
+# ...
 
 @router.get("", response_model=List[IndicatorResponse])
-def get_indicators(bot_id: Optional[str] = None, status: Optional[str] = None, db: Session = Depends(get_db)):
-    query = db.query(models.StrategyPackage)
+def get_indicators(
+    bot_id: Optional[str] = None, 
+    status: Optional[str] = None, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    query = db.query(models.StrategyPackage).filter(models.StrategyPackage.user_id == current_user.id)
     if bot_id:
         query = query.filter(models.StrategyPackage.bot_id == bot_id)
     if status:
@@ -47,7 +20,11 @@ def get_indicators(bot_id: Optional[str] = None, status: Optional[str] = None, d
     return query.all()
 
 @router.post("", response_model=IndicatorResponse)
-def create_indicator(ind: IndicatorCreate, db: Session = Depends(get_db)):
+def create_indicator(
+    ind: IndicatorCreate, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
     db_ind = models.StrategyPackage(
         id=ind.id,
         name=ind.name,
@@ -56,7 +33,8 @@ def create_indicator(ind: IndicatorCreate, db: Session = Depends(get_db)):
         period=ind.period,
         params=ind.params,
         status=ind.status,
-        bot_id=ind.bot_id
+        bot_id=ind.bot_id,
+        user_id=current_user.id
     )
     db.add(db_ind)
     db.commit()
@@ -70,7 +48,21 @@ def update_indicator_status(ind_id: str, status: str, db: Session = Depends(get_
         raise HTTPException(status_code=404, detail="Indicator not found")
     
     # Validation: Cannot activate if not ready? (Optional logic here)
+    old_status = ind.status
     ind.status = status
+    
+    # Audit Log
+    audit_log = models.AuditLog(
+        action="update_status",
+        target_table="indicators",
+        target_id=str(ind.id),
+        old_value={"status": old_status},
+        new_value={"status": status},
+        performed_by="system_dev", # Placeholder until Auth is restored
+        performed_at=datetime.utcnow()
+    )
+    db.add(audit_log)
+
     db.commit()
     return ind
 

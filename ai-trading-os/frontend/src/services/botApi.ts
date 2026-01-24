@@ -1,10 +1,31 @@
 import { Bot, BotStatus, BotConfig } from '@/types/botTypes';
+import { AuthService } from '@/services/auth'; // Added import
 
 const API_BASE_URL = 'http://localhost:8000/api/v1';
 
-// Helper for Fetch
-async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
-    const response = await fetch(`${API_BASE_URL}${url}`, options);
+// Helper for Fetch with Interceptor
+async function fetchJson<T>(url: string, options: RequestInit = {}): Promise<T> {
+    const headers = new Headers(options.headers || {});
+
+    // Inject Token
+    const token = AuthService.getToken();
+    if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+    }
+
+    const config = {
+        ...options,
+        headers
+    };
+
+    const response = await fetch(`${API_BASE_URL}${url}`, config);
+
+    // Handle Auth Errors
+    if (response.status === 401) {
+        AuthService.logout();
+        throw new Error('Unauthorized');
+    }
+
     if (!response.ok) {
         throw new Error(`API Error: ${response.statusText}`);
     }

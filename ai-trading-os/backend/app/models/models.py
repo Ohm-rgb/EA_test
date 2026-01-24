@@ -195,7 +195,7 @@ class AuditLog(Base):
     id = Column(Integer, primary_key=True, index=True)
     action = Column(String(50), nullable=False)
     target_table = Column(String(50), nullable=True)
-    target_id = Column(Integer, nullable=True)
+    target_id = Column(String(255), nullable=True)
     old_value = Column(JSON, nullable=True)
     new_value = Column(JSON, nullable=True)
     performed_by = Column(String(50), nullable=True)

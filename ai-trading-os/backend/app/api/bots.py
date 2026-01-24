@@ -1,57 +1,30 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-from .. import models
-from ..core.database import get_db
-from pydantic import BaseModel
+from ..core.security import get_current_user
 
-router = APIRouter(tags=["bots"])
-
-# Pydantic Schemas
-class BotConfigSchema(BaseModel):
-    personality: str
-    riskPerTrade: float
-    maxDailyTrades: int
-    stopOnLoss: int
-    timeframe: str
-
-class BotBase(BaseModel):
-    name: str
-    status: str
-    configuration: BotConfigSchema
-
-class BotCreate(BotBase):
-    id: str
-
-class BotResponse(BotBase):
-    id: str
-    boundIndicators: List[str] = []
-
-    class Config:
-        orm_mode = True
-
-# Helper to format response
-def format_bot_response(bot):
-    return {
-        "id": bot.id,
-        "name": bot.name,
-        "status": bot.status,
-        "configuration": bot.configuration,
-        "boundIndicators": [ind.id for ind in bot.indicators]
-    }
+# ...
 
 @router.get("", response_model=List[BotResponse])
-def get_bots(db: Session = Depends(get_db)):
-    bots = db.query(models.Bot).all()
+def get_bots(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    bots = db.query(models.Bot).filter(models.Bot.user_id == current_user.id).all()
     return [format_bot_response(b) for b in bots]
 
 @router.post("", response_model=BotResponse)
-def create_bot(bot: BotCreate, db: Session = Depends(get_db)):
+def create_bot(
+    bot: BotCreate, 
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
     db_bot = models.Bot(
         id=bot.id,
         name=bot.name,
         status=bot.status,
-        configuration=bot.configuration.dict()
+        configuration=bot.configuration.dict(),
+        user_id=current_user.id
     )
     db.add(db_bot)
     db.commit()
