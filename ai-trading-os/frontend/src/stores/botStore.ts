@@ -50,19 +50,27 @@ export interface PipelineState {
     };
 
     // Phase 5: Action
+    // Phase 5: Action
     actionConfig: {
         onBuy: TradeAction | null;
         onSell: TradeAction | null;
     };
 
+    // UI State (Inspector)
+    selectedItem: {
+        type: 'indicator' | 'risk' | 'rule' | null;
+        id: string | null;
+    };
+
     // Actions (Phase Authority)
     setContext: (symbol: string, timeframe: string) => void;
     syncIndicatorPool: (indicators: any[]) => void;
+    selectItem: (type: 'indicator' | 'risk' | 'rule' | null, id?: string | null) => void;
+    updateIndicatorParams: (id: string, params: Record<string, any>) => void;
 
     // Phase 3 Actions
     addRule: (rule: Omit<LogicRule, 'id'>) => void;
     removeRule: (id: string, type: 'buy' | 'sell') => void;
-    // Logic/Risk/Action setters will be added in their respective implementation phases
 }
 
 export const useBotStore = create<PipelineState>((set) => ({
@@ -72,11 +80,22 @@ export const useBotStore = create<PipelineState>((set) => ({
     ruleSets: { buy: [], sell: [] },
     riskConfig: { riskPerTrade: 1.0, stopLoss: 50, rewardRatio: 2.0 },
     actionConfig: { onBuy: null, onSell: null },
+    selectedItem: { type: null, id: null }, // Default: No selection
 
     // Phase 1 Action
     setContext: (symbol, timeframe) => set({
         contextConfig: { symbol, timeframe, isComplete: !!(symbol && timeframe) }
     }),
+
+    // UI Action: Select Item for Inspection
+    selectItem: (type, id = null) => set({ selectedItem: { type, id } }),
+
+    // Config Action: Update Params via Inspector
+    updateIndicatorParams: (id, params) => set((state) => ({
+        indicatorPool: state.indicatorPool.map(ind =>
+            ind.id === id ? { ...ind, params: { ...ind.params, ...params } } : ind
+        )
+    })),
 
     // Phase 2 Action: Sync from Side Panel
     syncIndicatorPool: (availableIndicators) => {

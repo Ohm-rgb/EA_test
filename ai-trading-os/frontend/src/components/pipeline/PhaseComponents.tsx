@@ -34,12 +34,12 @@ export function ContextPhase() {
 }
 
 export function InventoryPhase() {
-    const { indicatorPool } = useBotStore();
+    const { indicatorPool, selectedItem, selectItem } = useBotStore();
     return (
         <div className="p-4 space-y-4">
             <h4 className="text-white text-sm font-bold">Indicator Inventory</h4>
             <p className="text-xs text-slate-400">
-                Manage your tools here. Add indicators from the side panel (simulated for now).
+                Manage your tools here. Click an item to configure it in the Inspector Panel.
             </p>
             <div className="space-y-2">
                 {indicatorPool.length === 0 ? (
@@ -49,12 +49,26 @@ export function InventoryPhase() {
                         (Use the side panel to add)
                     </div>
                 ) : (
-                    indicatorPool.map(ind => (
-                        <div key={ind.id} className="bg-slate-800 p-2 rounded border border-slate-700 flex justify-between items-center">
-                            <span className="text-blue-300 text-xs font-mono">{ind.name}</span>
-                            <span className="text-slate-500 text-[10px]">{ind.indicatorId}</span>
-                        </div>
-                    ))
+                    indicatorPool.map(ind => {
+                        const isSelected = selectedItem.type === 'indicator' && selectedItem.id === ind.id;
+                        return (
+                            <div
+                                key={ind.id}
+                                onClick={() => selectItem('indicator', ind.id)}
+                                className={`
+                                    p-2 rounded border flex justify-between items-center cursor-pointer transition-all
+                                    ${isSelected
+                                        ? 'bg-blue-900/30 border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.3)]'
+                                        : 'bg-slate-800 border-slate-700 hover:border-slate-500'}
+                                `}
+                            >
+                                <span className={`text-xs font-mono font-bold ${isSelected ? 'text-blue-300' : 'text-slate-300'}`}>
+                                    {ind.name}
+                                </span>
+                                <span className="text-slate-500 text-[10px]">{ind.indicatorId}</span>
+                            </div>
+                        );
+                    })
                 )}
             </div>
         </div>
@@ -62,17 +76,28 @@ export function InventoryPhase() {
 }
 
 export function RiskPhase() {
+    const { selectItem, selectedItem, riskConfig } = useBotStore();
+    const isSelected = selectedItem.type === 'risk';
     return (
-        <div className="p-4 text-center text-slate-500">
+        <div
+            onClick={() => selectItem('risk')}
+            className={`
+                p-4 text-center cursor-pointer transition-all h-full
+                ${isSelected ? 'bg-amber-900/10' : ''}
+            `}
+        >
             <h4 className="text-slate-400 text-sm font-bold mb-2">Risk Management</h4>
-            <div className="p-4 border border-slate-700 rounded bg-slate-800/50">
+            <div className={`
+                p-4 border rounded bg-slate-800/50 transition-colors
+                ${isSelected ? 'border-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.2)]' : 'border-slate-700'}
+            `}>
                 <p className="text-xs mb-2">Configure Stop Loss & Risk %</p>
-                {/* Mock Inputs */}
                 <div className="flex gap-2 justify-center text-xs text-emerald-400 font-mono">
-                    <span>RISK: 1.0%</span>
-                    <span>SL: 50 PIP</span>
+                    <span>RISK: {riskConfig.riskPerTrade}%</span>
+                    <span>SL: {riskConfig.stopLoss}</span>
                 </div>
             </div>
+            <p className="text-[10px] text-slate-500 mt-2">(Click to Configure)</p>
         </div>
     );
 }

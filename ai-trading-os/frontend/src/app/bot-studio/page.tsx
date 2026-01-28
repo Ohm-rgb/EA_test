@@ -17,6 +17,7 @@ import { DashboardLayout } from "@/components/bot-studio/DashboardLayout";
 import { DashboardOverview } from "@/components/bot-studio/DashboardOverview";
 import { IndicatorSelectorPanel } from "@/components/indicator/IndicatorSelectorPanel";
 import { FlowEditor } from "@/components/flow/FlowEditor";
+import { InspectorPanel } from "@/components/pipeline/InspectorPanel";
 import { useBotStore } from "@/stores/botStore";
 
 interface BotRule {
@@ -464,46 +465,9 @@ export default function BotStudio() {
                             </GlassCard>
                         </div>
 
-                        {/* Config Panel (Risk) */}
+                        {/* Config Panel (Inspector) */}
                         <div className="col-span-4 h-full flex flex-col min-h-0">
-                            <GlassCard className="p-6 h-full bg-[#1e293b]/30 border-slate-700/50">
-                                <h3 className="text-lg font-semibold text-amber-500 mb-6">Risk Configuration</h3>
-                                <div className="space-y-6">
-                                    <div>
-                                        <label className="block text-xs uppercase text-slate-500 font-bold mb-2">Risk Per Trade</label>
-                                        <div className="flex items-center gap-4">
-                                            <input
-                                                type="range" min="0.5" max="5" step="0.5"
-                                                value={activeBot?.configuration.riskPerTrade || 1}
-                                                onChange={(e) => setRiskPerTrade(Number(e.target.value))}
-                                                className="flex-1 accent-amber-500"
-                                            />
-                                            <span className="font-mono text-amber-400">{activeBot?.configuration.riskPerTrade}%</span>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs uppercase text-slate-500 font-bold mb-2">Stop on Loss (Streak)</label>
-                                        <input
-                                            type="number"
-                                            value={activeBot?.configuration.stopOnLoss || 3}
-                                            onChange={(e) => setStopOnLoss(Number(e.target.value))}
-                                            className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white outline-none focus:border-amber-500"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs uppercase text-slate-500 font-bold mb-2">Primary Timeframe</label>
-                                        <select
-                                            value={activeBot?.configuration.timeframe || 'H1'}
-                                            onChange={(e) => setTimeframe(e.target.value)}
-                                            className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white outline-none focus:border-amber-500"
-                                        >
-                                            <option value="M15">M15</option>
-                                            <option value="H1">H1</option>
-                                            <option value="H4">H4</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </GlassCard>
+                            <InspectorPanel />
                         </div>
                     </div>
 

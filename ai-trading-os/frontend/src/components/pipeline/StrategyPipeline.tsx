@@ -37,9 +37,9 @@ export function StrategyPipeline() {
         const index = PHASES.indexOf(phase);
         if (index === 0) return true; // Context always accessible
 
-        // Must complete previous phase to enter current
+        // Access if previous complete OR if this phase is already complete (re-visiting)
         const prevPhase = PHASES[index - 1];
-        return phaseStatus[prevPhase];
+        return phaseStatus[prevPhase] || phaseStatus[phase];
     };
 
     return (
@@ -49,7 +49,6 @@ export function StrategyPipeline() {
                 {PHASES.map((phase, i) => {
                     const isComplete = phaseStatus[phase];
                     const isAccessible = canAccess(phase);
-                    const isCurrent = isAccessible && !phaseStatus[phase]; // Simplistic 'current' logic
 
                     return (
                         <div key={phase} className={`flex items-center ${i < PHASES.length - 1 ? 'flex-1' : ''}`}>
@@ -84,10 +83,6 @@ export function StrategyPipeline() {
 
             {/* Pipeline Content Area */}
             <div className="flex-1 relative overflow-auto p-6">
-                {/* 
-                    Placeholder implementations for now. 
-                    Real inner components (RuleBuilder etc) will be injected here.
-                */}
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4 h-full">
                     {PHASES.map((phase) => (
                         <div
@@ -96,20 +91,15 @@ export function StrategyPipeline() {
                                 relative flex flex-col border rounded-lg p-4 h-full transition-opacity duration-300
                                 ${canAccess(phase)
                                     ? 'opacity-100 border-slate-700 bg-slate-800/20'
-                                    : 'opacity-30 border-slate-800 bg-slate-900/10 pointer-events-none grayscale'}
+                                    : 'opacity-40 border-slate-800 bg-slate-900/10 pointer-events-none grayscale'}
                             `}
                         >
                             <h3 className="text-sm font-bold text-slate-400 mb-4 uppercase">{phase}</h3>
 
-                            {/* Access Denied Overlay for clarity */}
-                            {!canAccess(phase) && (
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <span className="text-xs text-slate-600 font-mono">LOCKED</span>
-                                </div>
-                            )}
+                            {/* Access Denied Overlay removed for better UX on revisit */}
 
                             {/* Content Slot */}
-                            <div className="flex-1 overflow-hidden flex flex-col">
+                            <div className="flex-1 overflow-hidden flex flex-col relative">
                                 {phase === 'context' && <ContextPhase />}
                                 {phase === 'inventory' && <InventoryPhase />}
                                 {phase === 'logic' && <RuleBuilder />}
