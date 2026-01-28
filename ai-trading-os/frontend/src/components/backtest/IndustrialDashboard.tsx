@@ -79,7 +79,7 @@ export function IndustrialDashboard({
             try {
                 const tradeData = await BotApi.getTrades({
                     sourceIndicatorId: activeContextId || undefined,
-                    limit: 1000
+                    limit: 200  // Backend max limit is 200
                 });
                 setTrades(tradeData);
 

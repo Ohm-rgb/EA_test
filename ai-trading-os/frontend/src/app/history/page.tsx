@@ -7,9 +7,11 @@ import { useState, useEffect } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { CHART_THEME } from "@/config/ChartTheme";
 
-// --- Mock Data Generator ---
 const generateData = (theme: 'light' | 'dark') => {
-    const colors = CHART_THEME[theme];
+    // Defensive check: ensure theme is valid before accessing CHART_THEME
+    const validThemes = ['light', 'dark'];
+    const safeTheme = (theme && validThemes.includes(theme)) ? theme : 'dark';
+    const colors = CHART_THEME[safeTheme];
 
     return {
         kpi: {

@@ -25,8 +25,11 @@ const HEATMAP_SCALE_LIGHT = [
 ];
 
 export function SessionHeatmap({ data, theme = 'dark' }: SessionHeatmapProps) {
-    const isLight = theme === 'light';
-    const themeColors = CHART_THEME[theme];
+    // Defensive check: ensure theme is valid before accessing CHART_THEME
+    const validThemes = ['light', 'dark'];
+    const safeTheme = (theme && validThemes.includes(theme)) ? theme : 'dark';
+    const isLight = safeTheme === 'light';
+    const themeColors = CHART_THEME[safeTheme];
 
     // Normalize data for lookup
     const heatMapData = useMemo(() => {

@@ -10,7 +10,10 @@ import { useState } from 'react';
 // --- Components ---
 
 export function PerformanceBarChart({ data, title, theme = 'dark' }: { data: any[], title: string, theme?: 'light' | 'dark' }) {
-    const colors = CHART_THEME[theme];
+    // Defensive check: ensure theme is valid
+    const validThemes = ['light', 'dark'];
+    const safeTheme = (theme && validThemes.includes(theme)) ? theme : 'dark';
+    const colors = CHART_THEME[safeTheme];
 
     // Use semantic variables for container
     const containerClass = "bg-[var(--bg-secondary)] border border-[var(--glass-border)] rounded-2xl p-6 h-[300px] flex flex-col shadow-sm transition-colors duration-300";
@@ -41,7 +44,10 @@ export function PerformanceBarChart({ data, title, theme = 'dark' }: { data: any
 }
 
 export function AssetAllocationChart({ data, theme = 'dark' }: { data: { name: string, value: number, color: string }[], theme?: 'light' | 'dark' }) {
-    const colors = CHART_THEME[theme];
+    // Defensive check: ensure theme is valid
+    const validThemes = ['light', 'dark'];
+    const safeTheme = (theme && validThemes.includes(theme)) ? theme : 'dark';
+    const colors = CHART_THEME[safeTheme];
     const containerClass = "bg-[var(--bg-secondary)] border border-[var(--glass-border)] rounded-2xl p-6 h-[300px] flex flex-col shadow-sm transition-colors duration-300";
 
     return (

@@ -20,14 +20,22 @@ async function fetchJson<T>(url: string, options: RequestInit = {}): Promise<T> 
 
     const response = await fetch(`${API_BASE_URL}${url}`, config);
 
-    // Handle Auth Errors
-    if (response.status === 401) {
+    // Handle Auth Errors (401 Unauthorized or 403 Forbidden)
+    if (response.status === 401 || response.status === 403) {
         AuthService.logout();
-        throw new Error('Unauthorized');
+        throw new Error(`Authentication Error: ${response.status} ${response.statusText}`);
     }
 
     if (!response.ok) {
-        throw new Error(`API Error: ${response.statusText}`);
+        // Try to get error details from response body
+        let errorDetail = response.statusText;
+        try {
+            const errorBody = await response.json();
+            errorDetail = errorBody.detail || errorBody.message || response.statusText;
+        } catch {
+            // Response body is not JSON, use statusText
+        }
+        throw new Error(`API Error (${response.status}): ${typeof errorDetail === 'object' ? JSON.stringify(errorDetail) : errorDetail}`);
     }
     return response.json();
 }
@@ -123,5 +131,34 @@ export const BotApi = {
         if (options?.sourceIndicatorId) params.append('source_indicator_id', options.sourceIndicatorId);
         if (options?.limit) params.append('limit', options.limit.toString());
         return fetchJson<any[]>(`/trades?${params.toString()}`);
+    },
+
+    // --- Epic 1: Binding & Availability ---
+    async getAvailableIndicators(botId: string): Promise<any[]> {
+        return fetchJson<any[]>(`/bots/${botId}/available-indicators`);
+    },
+
+    async bindIndicator(botId: string, indicatorId: string): Promise<any> {
+        return fetchJson<any>(`/bots/${botId}/indicators/${indicatorId}`, {
+            method: 'POST'
+        });
+    },
+
+    async unbindIndicator(botId: string, indicatorId: string): Promise<any> {
+        return fetchJson<any>(`/bots/${botId}/indicators/${indicatorId}`, {
+            method: 'DELETE'
+        });
+    },
+
+    async toggleIndicatorBinding(bindingId: string, enabled: boolean): Promise<any> {
+        return fetchJson<any>(`/bot-indicators/${bindingId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ is_enabled: enabled })
+        });
+    },
+
+    async getActiveIndicators(botId: string): Promise<any[]> {
+        return fetchJson<any[]>(`/bots/${botId}/active-indicators`);
     }
 };
