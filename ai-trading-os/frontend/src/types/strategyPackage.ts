@@ -33,6 +33,7 @@ export interface StrategyPackage {
     name: string;             // Display name (e.g., "Smart Money Concepts")
     type: 'package';          // Discriminator for mixed-mode rendering
     sourceScript?: string;    // Original Pine Script (optional)
+    source?: string;          // Source type (e.g. 'pine_script', 'python')
     subRules: SubRule[];      // Child rules
     isEnabled: boolean;       // Master toggle
     status: PackageStatus;    // Derived: active/partial/disabled

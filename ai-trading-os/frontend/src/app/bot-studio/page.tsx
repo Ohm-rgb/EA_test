@@ -15,6 +15,9 @@ import { BotSelector } from "@/components/bot/BotSelector";
 // New Dashboard Components
 import { DashboardLayout } from "@/components/bot-studio/DashboardLayout";
 import { DashboardOverview } from "@/components/bot-studio/DashboardOverview";
+import { IndicatorSelectorPanel } from "@/components/indicator/IndicatorSelectorPanel";
+import { FlowEditor } from "@/components/flow/FlowEditor";
+import { useBotStore } from "@/stores/botStore";
 
 interface BotRule {
     id: number;
@@ -67,12 +70,30 @@ export default function BotStudio() {
     const [rules, setRules] = useState<BotRule[]>([]);
     const [viewMode, setViewMode] = useState<'logic' | 'indicators'>('logic'); // Sub-view for Machine
     const [activeIndicators, setActiveIndicators] = useState<Indicator[]>([]);
+    const [availableIndicators, setAvailableIndicators] = useState<any[]>([]); // Epic 2: Selector State
+
+    // Epic 3: Flow Store Actions
+    // const syncIndicatorsToFlow = useBotStore(state => state.syncIndicatorsToFlow); // Deprecated
+    const { syncIndicatorPool } = useBotStore();
+
     const [strategyPackages, setStrategyPackages] = useState<StrategyPackage[]>([]);
     const [configurePackage, setConfigurePackage] = useState<StrategyPackage | null>(null);
     const [activeIndicatorId, setActiveIndicatorId] = useState<string | null>(null);
 
     // Modals
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
+    // -------------------------------------------------------------------------
+    // Sync Logic
+    // -------------------------------------------------------------------------
+    // Ref: Sync local indicators to Flow Store
+    useEffect(() => {
+        // Debounce slightly to prevent rapid firing
+        const timer = setTimeout(() => {
+            syncIndicatorPool(indicators);
+        }, 100);
+        return () => clearTimeout(timer);
+    }, [indicators, syncIndicatorPool]);
 
     // -------------------------------------------------------------------------
     // 2. Data Fetching & Effect
@@ -129,6 +150,14 @@ export default function BotStudio() {
                         source: i.source
                     }));
                 setActiveIndicators(activeInds);
+
+                try {
+                    // Load Epic 2: Available Indicators (Selection View)
+                    const avail = await BotApi.getAvailableIndicators(activeBotId);
+                    setAvailableIndicators(avail);
+                    // Epic 3: Auto-inject on load
+                    syncIndicatorPool(avail);
+                } catch (e) { console.error("Failed to load available indicators", e); }
 
                 // Load Legacy Rules
                 const fetchedRules = await BotApi.getBotRules(activeBotId);
@@ -244,19 +273,38 @@ export default function BotStudio() {
         }
     };
 
-    const handlePackageToggle = (packageId: string, enabled: boolean) => {
-        setStrategyPackages(prev => prev.map(pkg => {
-            if (pkg.id !== packageId) return pkg;
-            if (enabled && pkg.status !== 'active' && pkg.status !== 'partial') {
-                console.error('Cannot enable non-active package');
-                return pkg;
+    const handlePackageToggle = async (packageId: string, enabled: boolean) => {
+        // Find the package first to check status
+        const pkg = strategyPackages.find(p => p.id === packageId);
+        if (!pkg) return;
+
+        // Auto-activate if Draft
+        if (enabled && pkg.status === 'draft') {
+            try {
+                await BotApi.updateIndicatorStatus(packageId, 'active');
+                // Optimistic update will happen below
+            } catch (err) {
+                console.error("Failed to activate indicator:", err);
+                alert("Failed to activate indicator. Please try again.");
+                return;
             }
-            const updatedSubRules = pkg.subRules.map(r => ({ ...r, isEnabled: enabled }));
-            return { ...pkg, subRules: updatedSubRules, isEnabled: enabled };
+        } else if (enabled && pkg.status !== 'active' && pkg.status !== 'partial') {
+            console.error('Cannot enable non-active package');
+            return;
+        }
+
+        setStrategyPackages(prev => prev.map(p => {
+            if (p.id !== packageId) return p;
+
+            // If we just activated it, update status too
+            const newStatus = (enabled && p.status === 'draft') ? 'active' : p.status;
+
+            const updatedSubRules = p.subRules.map(r => ({ ...r, isEnabled: enabled }));
+            return { ...p, status: newStatus, subRules: updatedSubRules, isEnabled: enabled };
         }));
     };
 
-    const visiblePackages = strategyPackages.filter(pkg => pkg.status === 'active');
+    const visiblePackages = strategyPackages.filter(pkg => pkg.status === 'active' || pkg.status === 'draft');
 
     const handleSaveConfiguration = async () => {
         if (!activeBotId || !activeBot) return;
@@ -273,6 +321,53 @@ export default function BotStudio() {
             alert("Configuration saved successfully!");
         } catch (err: any) {
             alert("Failed to save: " + err.message);
+        }
+    };
+
+    // Epic 2: Binding Handlers
+    const handleBindIndicator = async (indicatorId: string) => {
+        // Optimistic Update
+        const updatedIndicators = availableIndicators.map(ind =>
+            ind.indicator_id === indicatorId ? { ...ind, is_bound: true, is_enabled: true } : ind
+        );
+        setAvailableIndicators(updatedIndicators);
+        // Epic 3: Sync to Flow
+        syncIndicatorPool(updatedIndicators);
+
+        try {
+            await BotApi.bindIndicator(activeBotId, indicatorId);
+        } catch (err) {
+            console.error(err);
+            // Revert on failure
+            const reverted = availableIndicators.map(ind =>
+                ind.indicator_id === indicatorId ? { ...ind, is_bound: false } : ind
+            );
+            setAvailableIndicators(reverted);
+            syncIndicatorPool(reverted); // Revert Flow
+            alert("Failed to bind indicator");
+        }
+    };
+
+    const handleUnbindIndicator = async (indicatorId: string) => {
+        // Optimistic Update
+        const updatedIndicators = availableIndicators.map(ind =>
+            ind.indicator_id === indicatorId ? { ...ind, is_bound: false } : ind
+        );
+        setAvailableIndicators(updatedIndicators);
+        // Epic 3: Sync to Flow
+        syncIndicatorPool(updatedIndicators);
+
+        try {
+            await BotApi.unbindIndicator(activeBotId, indicatorId);
+        } catch (err) {
+            console.error(err);
+            // Revert on failure
+            const reverted = availableIndicators.map(ind =>
+                ind.indicator_id === indicatorId ? { ...ind, is_bound: true } : ind
+            );
+            setAvailableIndicators(reverted);
+            syncIndicatorPool(reverted); // Revert Flow
+            alert("Failed to unbind indicator");
         }
     };
 
@@ -355,69 +450,15 @@ export default function BotStudio() {
 
                                 <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4">
                                     {viewMode === 'logic' ? (
-                                        <>
-                                            {/* Strategy Packages */}
-                                            {visiblePackages.length > 0 && (
-                                                <div className="space-y-3 mb-6">
-                                                    <div className="text-xs font-bold text-slate-500 uppercase">Strategy Packages</div>
-                                                    <div className="grid grid-cols-2 gap-3">
-                                                        {visiblePackages.map(pkg => (
-                                                            <StrategyPackageCard
-                                                                key={pkg.id}
-                                                                package_={pkg}
-                                                                onConfigure={() => setConfigurePackage(pkg)}
-                                                                onToggle={(enabled) => handlePackageToggle(pkg.id, enabled)}
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* Simple Rules */}
-                                            {rules.map((rule, idx) => (
-                                                <div key={rule.id} className="relative group bg-[#0f172a] p-4 rounded-lg border border-slate-700/50 flex items-center gap-4">
-                                                    <span className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-xs font-mono">{idx + 1}</span>
-                                                    <span className="text-xs font-bold text-blue-400 uppercase">IF</span>
-
-                                                    {/* Select Indicator */}
-                                                    <div className="relative min-w-[200px]">
-                                                        <select
-                                                            value={rule.indicator}
-                                                            onChange={(e) => updateRule(rule.id, 'indicator', e.target.value)}
-                                                            className="w-full bg-slate-800 text-slate-200 text-sm rounded px-3 py-2 appearance-none border border-slate-700 focus:border-blue-500 outline-none"
-                                                        >
-                                                            {activeIndicators.map(ind => (
-                                                                <option key={ind.id} value={ind.id}>{ind.type} - {ind.source}</option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-
-                                                    <span className="text-slate-500 text-lg">→</span>
-                                                    <span className="text-xs font-bold text-purple-400 uppercase">THEN</span>
-
-                                                    {/* Select Action */}
-                                                    <div className="relative min-w-[140px]">
-                                                        <select
-                                                            value={rule.action}
-                                                            onChange={(e) => updateRule(rule.id, 'action', e.target.value)}
-                                                            className="w-full bg-slate-800 text-slate-200 text-sm rounded px-3 py-2 appearance-none border border-slate-700 focus:border-blue-500 outline-none"
-                                                        >
-                                                            {actions.map(a => <option key={a} value={a}>{a}</option>)}
-                                                        </select>
-                                                    </div>
-
-                                                    <button onClick={() => removeRule(rule.id)} className="ml-auto text-slate-500 hover:text-red-400">✕</button>
-                                                </div>
-                                            ))}
-
-                                            <button onClick={addRule} className="w-full py-3 border-2 border-dashed border-slate-700 rounded-lg text-slate-500 hover:border-blue-500/50 hover:text-blue-400 transition-all">
-                                                + Add Logic Block
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <div className="p-4 bg-slate-800/50 rounded text-center text-slate-400 text-sm">
-                                            Active Indicators Shelf (Read Only)
+                                        <div className="w-full h-full min-h-[400px]">
+                                            <FlowEditor isDark={true} />
                                         </div>
+                                    ) : (
+                                        <IndicatorSelectorPanel
+                                            indicators={availableIndicators}
+                                            onBind={handleBindIndicator}
+                                            onUnbind={handleUnbindIndicator}
+                                        />
                                     )}
                                 </div>
                             </GlassCard>

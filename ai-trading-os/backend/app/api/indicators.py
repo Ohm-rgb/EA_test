@@ -3,7 +3,38 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.core import get_current_user # Added import
 
-# ...
+from app import models
+from app.core.database import get_db
+from pydantic import BaseModel
+from datetime import datetime
+
+router = APIRouter()
+
+class IndicatorCreate(BaseModel):
+    id: str
+    name: str
+    type: str  # 'standard' or 'custom'
+    source: str  # 'pine_script' or 'python'
+    period: str
+    params: dict
+    status: str = 'draft'
+    bot_id: Optional[str] = None
+
+class IndicatorResponse(BaseModel):
+    id: str
+    name: str
+    type: str
+    source: str
+    period: str
+    params: dict
+    status: str
+    bot_id: Optional[str]
+    user_id: int
+    config_hash: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+
 
 @router.get("", response_model=List[IndicatorResponse])
 def get_indicators(

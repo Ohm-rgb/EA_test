@@ -67,3 +67,26 @@ class BotRule(Base):
     
     bot = relationship("Bot", back_populates="rules")
     indicator = relationship("StrategyPackage", back_populates="rules")
+
+from sqlalchemy import UniqueConstraint
+
+class BotIndicator(Base):
+    __tablename__ = "bot_indicators"
+
+    id = Column(String, primary_key=True, index=True)
+    bot_id = Column(String, ForeignKey("bots.id"), nullable=False)
+    indicator_id = Column(String, ForeignKey("indicators.id"), nullable=False)
+    
+    is_enabled = Column(Boolean, default=True)
+    order = Column(Integer, default=0)        # For Flow Node ordering
+    bound_at = Column(DateTime, default=datetime.utcnow)  # Audit / Timeline
+
+    __table_args__ = (UniqueConstraint("bot_id", "indicator_id", name="_bot_indicator_uc"),)
+
+    # Relationships
+    bot = relationship("Bot", back_populates="bot_indicators")
+    indicator = relationship("StrategyPackage", back_populates="bot_associations")
+
+# Extend Bot and StrategyPackage with relationships
+Bot.bot_indicators = relationship("BotIndicator", back_populates="bot", cascade="all, delete-orphan")
+StrategyPackage.bot_associations = relationship("BotIndicator", back_populates="indicator", cascade="all, delete-orphan")

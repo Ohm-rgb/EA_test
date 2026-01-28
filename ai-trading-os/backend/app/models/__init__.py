@@ -17,6 +17,7 @@ from app.models.bot import (
     Bot,
     StrategyPackage,
     BotRule,
+    BotIndicator,
 )
 
 __all__ = [

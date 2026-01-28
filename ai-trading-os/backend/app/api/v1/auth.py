@@ -115,7 +115,8 @@ async def login(
     db.commit()
     
     # Create token
-    access_token = create_access_token(data={"sub": user.username})
+    # Create token
+    access_token = create_access_token(data={"sub": user.username, "id": user.id})
     
     audit_service.log_auth_event(
         event_type="login",

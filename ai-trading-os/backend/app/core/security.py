@@ -12,7 +12,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.core.config import settings
 
 # Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 # JWT Bearer
 security = HTTPBearer()
@@ -63,23 +63,31 @@ def decode_token(token: str) -> dict:
         )
 
 
+from pydantic import BaseModel
+
+class UserContext(BaseModel):
+    id: int
+    username: str
+
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security)
-) -> dict:
+) -> UserContext:
     """Dependency to get current user from JWT token"""
     token = credentials.credentials
     
     # DEV MODE: Allow mock-token for development/testing
     if token == "mock-token":
-        return {"username": "dev_user", "user_id": 1}
+        return UserContext(id=1, username="dev_user")
     
     payload = decode_token(token)
     
     username = payload.get("sub")
-    if username is None:
+    user_id = payload.get("id")
+    
+    if username is None or user_id is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token payload",
+            detail="Invalid token payload: missing sub or id",
         )
     
-    return {"username": username}
+    return UserContext(id=user_id, username=username)

@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     """Application settings from environment variables"""
     
     # Database
-    DATABASE_URL: str = "sqlite:///./dev.db"
+    DATABASE_URL: str = "sqlite:///./dev_v2.db"
     
     # JWT
     JWT_SECRET: str = "change-this-to-a-secure-random-string"
