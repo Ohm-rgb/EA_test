@@ -14,8 +14,8 @@ from app.core.config import settings
 # Password hashing
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
-# JWT Bearer
-security = HTTPBearer()
+# JWT Bearer (auto_error=False for DEV mode - allows requests without token)
+security = HTTPBearer(auto_error=False)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -70,24 +70,37 @@ class UserContext(BaseModel):
     username: str
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
 ) -> UserContext:
-    """Dependency to get current user from JWT token"""
-    token = credentials.credentials
+    """
+    Dependency to get current user from JWT token.
     
-    # DEV MODE: Allow mock-token for development/testing
-    if token == "mock-token":
-        return UserContext(id=1, username="dev_user")
+    DEV MODE: Authentication is DISABLED
+    Always returns a default admin user for development convenience.
+    """
+    # ========================================
+    # ⚠️  DEV MODE: AUTH DISABLED
+    # ========================================
+    # To re-enable authentication, remove this return statement
+    # and uncomment the token validation logic below.
+    return UserContext(id=1, username="admin")
     
-    payload = decode_token(token)
-    
-    username = payload.get("sub")
-    user_id = payload.get("id")
-    
-    if username is None or user_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token payload: missing sub or id",
-        )
-    
-    return UserContext(id=user_id, username=username)
+    # --- Original Auth Logic (Commented Out) ---
+    # token = credentials.credentials
+    # 
+    # # DEV MODE: Allow mock-token for development/testing
+    # if token == "mock-token":
+    #     return UserContext(id=1, username="dev_user")
+    # 
+    # payload = decode_token(token)
+    # 
+    # username = payload.get("sub")
+    # user_id = payload.get("id")
+    # 
+    # if username is None or user_id is None:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_401_UNAUTHORIZED,
+    #         detail="Invalid token payload: missing sub or id",
+    #     )
+    # 
+    # return UserContext(id=user_id, username=username)

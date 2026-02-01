@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Union
 from app.core import get_current_user # Added import
 
 from app import models
@@ -15,7 +15,7 @@ class IndicatorCreate(BaseModel):
     name: str
     type: str  # 'standard' or 'custom'
     source: str  # 'pine_script' or 'python'
-    period: str
+    period: Union[str, int]  # Accept both for flexibility
     params: dict
     status: str = 'draft'
     bot_id: Optional[str] = None
@@ -25,7 +25,7 @@ class IndicatorResponse(BaseModel):
     name: str
     type: str
     source: str
-    period: str
+    period: Union[str, int]  # Accept both (legacy data may be int)
     params: dict
     status: str
     bot_id: Optional[str]
