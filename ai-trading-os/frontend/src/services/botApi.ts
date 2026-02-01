@@ -160,5 +160,26 @@ export const BotApi = {
 
     async getActiveIndicators(botId: string): Promise<any[]> {
         return fetchJson<any[]>(`/bots/${botId}/active-indicators`);
+    },
+
+    // --- Integrity Lab ---
+    async checkIntegrity(indicatorId: string): Promise<any> {
+        return fetchJson<any>(`/integrity/${indicatorId}/check`, { method: 'POST' });
+    },
+
+    async deployIndicator(indicatorId: string, botIds: string[]): Promise<any> {
+        return fetchJson<any>(`/integrity/${indicatorId}/deploy`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ target_bots: botIds })
+        });
+    },
+
+    async snapshotIndicator(indicatorId: string, note: string): Promise<any> {
+        return fetchJson<any>(`/integrity/${indicatorId}/snapshot`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ note })
+        });
     }
 };
