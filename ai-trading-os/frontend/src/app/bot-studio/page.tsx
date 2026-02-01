@@ -259,7 +259,7 @@ export default function BotStudio() {
                     bot_id: activeBotId,
                     // Schema Adapters for Backend (IndicatorCreate)
                     source: strategy.package.sourceScript || 'manual', // Map sourceScript -> source
-                    period: 0, // Default period (backend required int)
+                    period: '14', // Default period (backend required string)
                     params: {}, // Default params
                     type: 'pine_script' // Enforce type
                 };
