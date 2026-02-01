@@ -122,9 +122,9 @@ export function IntegrityInspector({ indicator, capability, onSave }: IntegrityI
                         📸 Snapshot
                     </button>
                     <div className={`px-2 py-1 rounded text-xs font-bold uppercase border flex items-center gap-1 ${isRunning ? 'animate-pulse bg-blue-500/10 border-blue-500/30 text-blue-400' :
-                            allPassed
-                                ? (hasWarnings ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400')
-                                : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+                        allPassed
+                            ? (hasWarnings ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400')
+                            : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
                         }`}>
                         {isRunning ? 'Checking...' : (allPassed ? (hasWarnings ? 'Verified (Warnings)' : 'Verified') : 'Issues Found')}
                         {!isRunning && <button onClick={runChecks} className="ml-1 hover:text-white">↻</button>}
@@ -132,24 +132,44 @@ export function IntegrityInspector({ indicator, capability, onSave }: IntegrityI
                 </div>
             </div>
 
-            {/* Checklist Area */}
-            <div className="p-4 flex flex-col gap-2 bg-[var(--bg-primary)]/50 border-b border-[var(--glass-border)] max-h-[200px] overflow-y-auto">
-                {checks.map(check => (
-                    <div key={check.id} className="flex items-center gap-3 p-2 rounded hover:bg-[var(--bg-tertiary)]/50 transition-colors">
-                        <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold border ${check.valid
-                                ? (check.warning ? 'bg-amber-500 text-white border-amber-600' : 'bg-emerald-500 text-white border-emerald-600')
-                                : 'bg-[var(--bg-primary)] text-rose-500 border-rose-500'
-                            }`}>
-                            {check.valid ? (check.warning ? '!' : '✓') : 'X'}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <div className="text-xs font-medium text-[var(--text-secondary)]">{check.label}</div>
-                            <div className={`text-[10px] truncate ${check.valid ? (check.warning ? 'text-amber-400' : 'text-[var(--text-muted)]') : 'text-rose-400'}`}>
-                                {check.message}
-                            </div>
-                        </div>
+            {/* Checklist Area (Pipeline Mode) */}
+            <div className="p-4 bg-[var(--bg-primary)]/50 border-b border-[var(--glass-border)]">
+                {/* Progress Bar */}
+                {isRunning && (
+                    <div className="w-full h-1 bg-[var(--bg-tertiary)] mb-4 overflow-hidden rounded-full">
+                        <div className="h-full bg-blue-500 animate-progress-indeterminate"></div>
                     </div>
-                ))}
+                )}
+
+                {/* Horizontal Pipeline */}
+                <div className="flex items-center justify-between relative">
+                    {/* Connecting Line */}
+                    <div className="absolute top-1/2 left-0 w-full h-0.5 bg-[var(--bg-tertiary)] -z-10 transform -translate-y-1/2" />
+
+                    {checks.map((check, index) => {
+                        const isPending = isRunning && index >= checks.findIndex(c => !c.valid); // Simplified logic
+                        return (
+                            <div key={check.id} className="flex flex-col items-center gap-2 relative bg-[var(--bg-secondary)] px-2">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all duration-300 ${isRunning
+                                    ? 'border-blue-500 text-blue-400 animate-pulse bg-[var(--bg-secondary)]' // Active checking state
+                                    : check.valid
+                                        ? (check.warning ? 'bg-amber-500 text-white border-amber-600 shadow-[0_0_10px_rgba(245,158,11,0.4)]' : 'bg-emerald-500 text-white border-emerald-600 shadow-[0_0_10px_rgba(16,185,129,0.4)]')
+                                        : 'bg-[var(--bg-primary)] text-rose-500 border-rose-500'
+                                    }`}>
+                                    {isRunning ? (index + 1) : (check.valid ? (check.warning ? '!' : '✓') : 'X')}
+                                </div>
+
+                                <div className="text-center w-24">
+                                    <div className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">{check.label.split(' ')[0]}</div>
+                                    <div className={`text-[9px] truncate transition-opacity duration-300 ${isRunning ? 'opacity-50' : 'opacity-100'} ${check.valid ? (check.warning ? 'text-amber-400' : 'text-[var(--text-muted)]') : 'text-rose-400 font-bold'
+                                        }`}>
+                                        {isRunning ? 'Checking...' : check.message}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
 
             {/* Deployment Action */}
@@ -185,7 +205,7 @@ export function IntegrityInspector({ indicator, capability, onSave }: IntegrityI
                     capability={capability}
                     indicatorStatus={indicator.status}
                     boundBotIds={indicator.boundBotIds}
-                    initialConfig={{}} // Should pass actual config
+                    initialConfig={indicator.config || {}} // Use real config
                     onSave={onSave}
                 />
             </div>

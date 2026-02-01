@@ -34,6 +34,8 @@ export interface StrategyPackage {
     type: 'package';          // Discriminator for mixed-mode rendering
     sourceScript?: string;    // Original Pine Script (optional)
     source?: string;          // Source type (e.g. 'pine_script', 'python')
+    params?: Record<string, any>; // [NEW] Configuration parameters
+    period?: number | string;     // [NEW] Main period/length
     subRules: SubRule[];      // Child rules
     isEnabled: boolean;       // Master toggle
     status: PackageStatus;    // Derived: active/partial/disabled

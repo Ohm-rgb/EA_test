@@ -100,6 +100,9 @@ export interface ManagedIndicator {
     // Bot binding (logical only - NO execution from this page)
     boundBotIds: string[];              // Bot IDs this indicator is bound to
 
+    // Configuration
+    config?: Record<string, any>;       // [NEW] Active configuration values
+
     // Sub-signals configuration
     subSignals: SubSignalConfig[];
     enabledSubSignalCount: number;      // Derived: count of enabled sub-signals

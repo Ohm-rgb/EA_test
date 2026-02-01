@@ -19,6 +19,7 @@ import { IntegrityInspector } from './IntegrityInspector'; // New
 import { IndicatorManagementPanel } from './IndicatorManagementPanel';
 import { IndicatorContextBar } from './IndicatorContextBar';
 import { SmartMoneyConceptsCapability } from '@/services/capabilities/smc';
+import { GenericCapability } from '@/services/capabilities/generic';
 import { BotApi } from '@/services/botApi';
 
 interface IndustrialDashboardProps {
@@ -210,7 +211,7 @@ export function IndustrialDashboard({
                                 capability={
                                     activeContextIndicator.name.includes('Smart Money')
                                         ? SmartMoneyConceptsCapability
-                                        : { ...SmartMoneyConceptsCapability, id: 'generic_cap' }
+                                        : GenericCapability
                                 }
                                 onSave={handleSaveConfig}
                             />

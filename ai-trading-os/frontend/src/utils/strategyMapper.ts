@@ -33,6 +33,7 @@ export function mapPackageToIndicator(pkg: StrategyPackage): ManagedIndicator {
             status: status,
             packageId: pkg.id,
             boundBotIds: [], // TODO: Bind from actual bot/package relationship if available
+            config: pkg.params || { period: pkg.period }, // [NEW] Propagate params
             subSignals: subSignals,
             enabledSubSignalCount: subSignals.filter(s => s.isEnabled).length,
             // Mock test result for consistency until real backtest data is available
