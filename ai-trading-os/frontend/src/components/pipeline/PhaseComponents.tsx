@@ -36,26 +36,97 @@ export function ContextPhase() {
 
 import { AVAILABLE_INDICATORS } from '@/data/indicators';
 
+import { ChevronLeft, Info, CheckCircle2, PlusCircle } from 'lucide-react';
+
 export function InventoryPhase() {
-    const { indicatorPool, addIndicator, removeIndicator } = useBotStore();
+    const { indicatorPool, addIndicator, removeIndicator, selectedItem, selectItem, updateIndicatorParams } = useBotStore();
 
-    const handleToggle = (type: string, name: string) => {
-        // Check if already in pool
-        const existing = indicatorPool.find(i => i.name === name || i.indicatorId === type.toLowerCase());
+    // 1. Determine Mode: Tuning vs Library
+    const activeIndicatorID = selectedItem?.type === 'indicator' ? selectedItem.id : null;
+    const activeIndicator = indicatorPool.find(i => i.id === activeIndicatorID);
 
-        if (existing) {
-            removeIndicator(existing.id);
-        } else {
-            addIndicator({
-                id: Date.now().toString(), // simplistic ID gen
-                name: name,
-                indicatorId: type.toLowerCase(),
-                params: {}, // default params
-                isBound: true
-            });
-        }
-    };
+    // MODE: TUNING (If an indicator is selected)
+    if (activeIndicator) {
+        return (
+            <div className="p-6 space-y-6 h-full flex flex-col">
+                {/* Header / Nav */}
+                <div className="flex items-center gap-2 mb-2">
+                    <button
+                        onClick={() => selectItem(null)}
+                        className="p-1 hover:bg-slate-800 rounded-full text-slate-400 hover:text-white transition-colors"
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <h4 className="text-white text-lg font-bold">Configure {activeIndicator.name}</h4>
+                </div>
 
+                {/* Configuration Form */}
+                <div className="flex-1 space-y-6 overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="p-4 bg-slate-800/50 border border-slate-700/50 rounded-xl space-y-4">
+                        <div className="flex items-start gap-3">
+                            <Info className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                            <p className="text-xs text-slate-400 leading-relaxed">
+                                Adjust the parameters for this indicator. Changes will affect how the bot analyzes market data.
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Common Parameters (Mocked for now as we don't have schema per indicator yet) */}
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-slate-400 uppercase">Period / Length</label>
+                            <input
+                                type="number"
+                                className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none transition-colors"
+                                value={activeIndicator.params.period || 14}
+                                onChange={(e) => updateIndicatorParams(activeIndicator.id, { period: parseInt(e.target.value) })}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-slate-400 uppercase">Source Type</label>
+                            <select
+                                className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none transition-colors"
+                                value={activeIndicator.params.source || 'close'}
+                                onChange={(e) => updateIndicatorParams(activeIndicator.id, { source: e.target.value })}
+                            >
+                                <option value="close">Close Price</option>
+                                <option value="open">Open Price</option>
+                                <option value="high">High Price</option>
+                                <option value="low">Low Price</option>
+                                <option value="hl2">(High + Low) / 2</option>
+                            </select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-slate-400 uppercase">Shift / Offset</label>
+                            <input
+                                type="number"
+                                className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none transition-colors"
+                                value={activeIndicator.params.shift || 0}
+                                onChange={(e) => updateIndicatorParams(activeIndicator.id, { shift: parseInt(e.target.value) })}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Footer Actions */}
+                <div className="pt-4 border-t border-slate-800">
+                    <button
+                        onClick={() => {
+                            removeIndicator(activeIndicator.id);
+                            selectItem(null);
+                        }}
+                        className="w-full py-2.5 text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors border border-transparent hover:border-rose-500/20"
+                    >
+                        Remove Indicator
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // MODE: LIBRARY (Default)
     return (
         <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
@@ -76,24 +147,30 @@ export function InventoryPhase() {
                     return (
                         <div
                             key={ind.type}
-                            onClick={() => handleToggle(ind.type, ind.name)}
                             className={`
-                                relative group flex items-start gap-4 p-4 border rounded-xl cursor-pointer transition-all duration-200
+                                relative group flex items-start gap-4 p-4 border rounded-xl transition-all duration-200
                                 ${isActive
-                                    ? 'bg-blue-600/10 border-blue-500/50 shadow-[0_0_15px_rgba(37,99,235,0.1)]'
-                                    : 'bg-slate-800/40 border-slate-700 hover:bg-slate-800 hover:border-slate-600'}
+                                    ? 'bg-blue-600/5 border-blue-500/30'
+                                    : 'bg-slate-800/40 border-slate-700 hover:bg-slate-800 hover:border-slate-500 hover:shadow-lg cursor-pointer'}
                             `}
+                            onClick={() => {
+                                if (!isActive) {
+                                    addIndicator({
+                                        id: Date.now().toString(),
+                                        name: ind.name,
+                                        indicatorId: ind.type.toLowerCase(),
+                                        params: { period: 14, source: 'close' }, // Default Init Params
+                                        isBound: true
+                                    });
+                                }
+                            }}
                         >
-                            {/* Checkbox */}
+                            {/* Icon / Status */}
                             <div className={`
-                                flex-none w-5 h-5 rounded border mt-0.5 flex items-center justify-center transition-all
-                                ${isActive
-                                    ? 'bg-blue-500 border-blue-500 text-white'
-                                    : 'bg-slate-900 border-slate-600 text-transparent group-hover:border-slate-500'}
+                                flex-none w-10 h-10 rounded-lg flex items-center justify-center transition-all
+                                ${isActive ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-900 text-slate-500 group-hover:bg-blue-600 group-hover:text-white'}
                             `}>
-                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                </svg>
+                                {isActive ? <CheckCircle2 className="w-5 h-5" /> : <PlusCircle className="w-5 h-5" />}
                             </div>
 
                             <div className="flex-1">
@@ -101,9 +178,15 @@ export function InventoryPhase() {
                                     {ind.name}
                                 </h5>
                                 <p className="text-xs text-slate-500 leading-relaxed">
-                                    Standard {ind.name} technical indicator.
+                                    {ind.description}
                                 </p>
                             </div>
+
+                            {isActive && (
+                                <span className="absolute top-4 right-4 text-[10px] uppercase font-bold text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded">
+                                    Added
+                                </span>
+                            )}
                         </div>
                     );
                 })}
