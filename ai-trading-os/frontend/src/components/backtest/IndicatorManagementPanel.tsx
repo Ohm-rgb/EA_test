@@ -11,6 +11,7 @@ interface IndicatorManagementPanelProps {
     indicators: ManagedIndicator[];
     onStatusChange: (indicatorId: string, newStatus: IndicatorStatus) => void;
     onConfigure: (indicator: ManagedIndicator) => void;
+    onDelete?: (indicatorId: string) => void; // Optional delete callback
 }
 
 /**
@@ -23,7 +24,8 @@ interface IndicatorManagementPanelProps {
 export function IndicatorManagementPanel({
     indicators,
     onStatusChange,
-    onConfigure
+    onConfigure,
+    onDelete
 }: IndicatorManagementPanelProps) {
 
     // State for filtering
@@ -134,9 +136,19 @@ export function IndicatorManagementPanel({
                     </button>
                 )}
                 {indicator.status === 'archived' && (
-                    <button onClick={() => handleStatusToggle(indicator)} className="px-3 py-1.5 rounded text-xs font-medium bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-all">
-                        Restore
-                    </button>
+                    <div className="flex items-center gap-1">
+                        <button onClick={() => handleStatusToggle(indicator)} className="px-3 py-1.5 rounded text-xs font-medium bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-all">
+                            Restore
+                        </button>
+                        {onDelete && (
+                            <button
+                                onClick={() => onDelete(indicator.id)}
+                                className="px-3 py-1.5 rounded text-xs font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all"
+                            >
+                                Delete
+                            </button>
+                        )}
+                    </div>
                 )}
 
                 {/* Archive Button */}

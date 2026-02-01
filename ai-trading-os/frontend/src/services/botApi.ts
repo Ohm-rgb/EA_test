@@ -102,6 +102,10 @@ export const BotApi = {
         });
     },
 
+    async deleteIndicator(id: string): Promise<any> {
+        return fetchJson<any>(`/indicators/${id}`, { method: 'DELETE' });
+    },
+
     // --- Rules ---
     async getBotRules(botId: string): Promise<any[]> { // Using any[] for now, should be BotRule[]
         return fetchJson<any[]>(`/rules/${botId}`);
@@ -165,6 +169,10 @@ export const BotApi = {
     // --- Integrity Lab ---
     async checkIntegrity(indicatorId: string): Promise<any> {
         return fetchJson<any>(`/integrity/${indicatorId}/check`, { method: 'POST' });
+    },
+
+    async analyzeExternal(indicatorId: string): Promise<any> {
+        return fetchJson<any>(`/integrity/${indicatorId}/analyze-external`, { method: 'POST' });
     },
 
     async deployIndicator(indicatorId: string, botIds: string[]): Promise<any> {

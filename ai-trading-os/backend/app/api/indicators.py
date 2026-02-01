@@ -147,3 +147,41 @@ def update_indicator_config(ind_id: str, payload: IndicatorConfigUpdate, db: Ses
         "config_changed": old_hash != new_hash,
         "message": "Config updated. Backtest cache should be invalidated." if old_hash != new_hash else "No change detected."
     }
+
+@router.delete("/{ind_id}")
+def delete_indicator(ind_id: str, db: Session = Depends(get_db)):
+    # 1. Fetch Indicator
+    ind = db.query(models.StrategyPackage).filter(models.StrategyPackage.id == ind_id).first()
+    if not ind:
+        raise HTTPException(status_code=404, detail="Indicator not found")
+
+    # 2. Guard: Check for Active Bindings
+    # Check if this indicator is bound to any bots (using the new binding table or logic)
+    # For now, check if 'bot_id' is set OR if it's in the 'indicator_bindings' table
+    
+    # Check direct binding
+    if ind.bot_id:
+        bot = db.query(models.Bot).filter(models.Bot.id == ind.bot_id).first()
+        if bot:
+            raise HTTPException(
+                status_code=409, 
+                detail=f"Cannot delete indicator: Bound to bot '{bot.name}'. Please unbind first."
+            )
+            
+    # Check many-to-many bindings (if table exists)
+    # active_bindings = db.query(models.BotIndicatorBinding).filter(models.BotIndicatorBinding.indicator_id == ind_id).all()
+    # if active_bindings:
+    #      raise HTTPException(status_code=409, detail="Cannot delete: Indicator is bound to one or more bots.")
+
+    # 3. Archive check (Optional: Require status to be 'archived' first?)
+    # User requested 'delete', so we allow direct delete if safe.
+
+    # 4. Perform Delete
+    try:
+        db.delete(ind)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
+
+    return {"status": "success", "message": f"Indicator {ind_id} deleted successfully"}

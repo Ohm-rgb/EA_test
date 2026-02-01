@@ -128,6 +128,18 @@ export function IndustrialDashboard({
         }
     };
 
+    const handleDeleteIndicator = async (indicatorId: string) => {
+        if (!window.confirm("Are you sure you want to permanently delete this indicator?")) return;
+        try {
+            await BotApi.deleteIndicator(indicatorId);
+            setManagedIndicators(prev => prev.filter(ind => ind.id !== indicatorId));
+            if (activeContextId === indicatorId) setActiveContextId(null); // Clear context if deleted
+        } catch (error: any) {
+            console.error("Delete Failed:", error);
+            alert(`Failed to delete: ${error.message || 'Unknown error'}`);
+        }
+    };
+
     return (
         <div className="h-full flex flex-col bg-[var(--bg-primary)]">
             {/* Header / Context Bar */}
@@ -197,6 +209,7 @@ export function IndustrialDashboard({
                             indicators={managedIndicators}
                             onStatusChange={handleStatusChange}
                             onConfigure={handleConfigure}
+                            onDelete={handleDeleteIndicator}
                         />
                     </div>
                 </div>
