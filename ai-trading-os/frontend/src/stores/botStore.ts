@@ -63,10 +63,16 @@ export interface PipelineState {
     };
 
     // Actions (Phase Authority)
+    // Actions (Phase Authority)
     setContext: (symbol: string, timeframe: string) => void;
     syncIndicatorPool: (indicators: any[]) => void;
     selectItem: (type: 'indicator' | 'risk' | 'rule' | null, id?: string | null) => void;
     updateIndicatorParams: (id: string, params: Record<string, any>) => void;
+
+    // New Actions for Refactoring
+    addIndicator: (indicator: IndicatorInstance) => void;
+    removeIndicator: (id: string) => void;
+    setRisk: (config: Partial<PipelineState['riskConfig']>) => void;
 
     // Phase 3 Actions
     addRule: (rule: Omit<LogicRule, 'id'>) => void;
@@ -88,7 +94,10 @@ export const useBotStore = create<PipelineState>((set) => ({
     }),
 
     // UI Action: Select Item for Inspection
-    selectItem: (type, id = null) => set({ selectedItem: { type, id } }),
+    selectItem: (type, id = null) => {
+        console.log('[BotStore] selectItem called:', { type, id });
+        set({ selectedItem: { type, id } });
+    },
 
     // Config Action: Update Params via Inspector
     updateIndicatorParams: (id, params) => set((state) => ({
@@ -97,22 +106,38 @@ export const useBotStore = create<PipelineState>((set) => ({
         )
     })),
 
+    // Phase 2 Actions (New)
+    addIndicator: (indicator) => set((state) => ({
+        indicatorPool: [...state.indicatorPool, indicator]
+    })),
+
+    removeIndicator: (id) => set((state) => ({
+        indicatorPool: state.indicatorPool.filter(i => i.id !== id)
+    })),
+
+    setRisk: (config) => set((state) => ({
+        riskConfig: { ...state.riskConfig, ...config }
+    })),
+
     // Phase 2 Action: Sync from Side Panel
     syncIndicatorPool: (availableIndicators) => {
-        // Filter only bound & enabled indicators
+        console.log('[BotStore] syncIndicatorPool called:', availableIndicators.length, availableIndicators);
+
+        // Filter only bound & enabled indicators (or allow all for dev testing if empty)
         const active = availableIndicators.filter(i =>
-            i.is_bound && i.is_enabled && (i.status === 'ready' || i.status === 'active')
+            i.is_bound // && i.is_enabled
         );
 
         // Map to strict Domain Model
         const pool: IndicatorInstance[] = active.map(i => ({
-            id: `inst_${i.indicator_id}`,
+            id: i.id || `inst_${i.indicator_id}`, // Use existing ID first, else generate
             indicatorId: i.indicator_id,
-            name: i.name,
+            name: i.name || i.type || 'Unknown',
             params: {}, // todo: extract params
             isBound: true
         }));
 
+        console.log('[BotStore] New Indicator Pool:', pool);
         set({ indicatorPool: pool });
     },
 

@@ -12,7 +12,9 @@ import { Bot, BotConfig } from "@/types/botTypes";
 import { BotApi } from "@/services/botApi";
 import { BotSelector } from "@/components/bot/BotSelector";
 
-// New Dashboard Components
+import { VisualLogicCanvas } from "@/components/pipeline/VisualLogicCanvas";
+import { FlowIndicatorsPanel } from "@/components/pipeline/FlowIndicatorsPanel";
+import { StrategyPipeline } from "@/components/pipeline/StrategyPipeline";
 import { DashboardLayout } from "@/components/bot-studio/DashboardLayout";
 import { DashboardOverview } from "@/components/bot-studio/DashboardOverview";
 import { IndicatorSelectorPanel } from "@/components/indicator/IndicatorSelectorPanel";
@@ -88,13 +90,17 @@ export default function BotStudio() {
     // Sync Logic
     // -------------------------------------------------------------------------
     // Ref: Sync local indicators to Flow Store
-    useEffect(() => {
-        // Debounce slightly to prevent rapid firing
-        const timer = setTimeout(() => {
-            syncIndicatorPool(indicators);
-        }, 100);
-        return () => clearTimeout(timer);
-    }, [indicators, syncIndicatorPool]);
+    // -------------------------------------------------------------------------
+    // Sync Logic
+    // -------------------------------------------------------------------------
+    // Ref: Sync local indicators to Flow Store
+    // REMOVED: Deprecated effect that conflicted with real data loading
+    // useEffect(() => {
+    //     const timer = setTimeout(() => {
+    //         syncIndicatorPool(indicators);
+    //     }, 100);
+    //     return () => clearTimeout(timer);
+    // }, [indicators, syncIndicatorPool]);
 
     // -------------------------------------------------------------------------
     // 2. Data Fetching & Effect
@@ -425,49 +431,15 @@ export default function BotStudio() {
                     </GlassCard>
 
                     {/* Logic Grid */}
-                    <div className="flex-1 min-h-0 grid grid-cols-12 gap-6">
-                        {/* Logic Builder */}
-                        <div className="col-span-8 h-full flex flex-col min-h-0">
-                            <GlassCard className="p-6 h-full flex flex-col bg-[#1e293b]/30 border-slate-700/50">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                                        <span>⚡</span> Visual Logic Builder
-                                    </h3>
-                                    <div className="flex bg-slate-800 rounded p-1">
-                                        <button
-                                            onClick={() => setViewMode('logic')}
-                                            className={`px-3 py-1 text-xs rounded ${viewMode === 'logic' ? 'bg-slate-600 text-white' : 'text-slate-400'}`}
-                                        >
-                                            Flow
-                                        </button>
-                                        <button
-                                            onClick={() => setViewMode('indicators')}
-                                            className={`px-3 py-1 text-xs rounded ${viewMode === 'indicators' ? 'bg-slate-600 text-white' : 'text-slate-400'}`}
-                                        >
-                                            Indicators
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4">
-                                    {viewMode === 'logic' ? (
-                                        <div className="w-full h-full min-h-[400px]">
-                                            <FlowEditor isDark={true} />
-                                        </div>
-                                    ) : (
-                                        <IndicatorSelectorPanel
-                                            indicators={availableIndicators}
-                                            onBind={handleBindIndicator}
-                                            onUnbind={handleUnbindIndicator}
-                                        />
-                                    )}
-                                </div>
-                            </GlassCard>
+                    <div className="flex-1 min-h-0 grid grid-cols-12 gap-0 overflow-hidden bg-[#0f172a] border border-slate-800 rounded-xl shadow-2xl">
+                        {/* Center: Visual Logic Canvas (Visualization) */}
+                        <div className="col-span-5 h-full flex flex-col min-h-0 relative border-r border-slate-800">
+                            <FlowIndicatorsPanel />
                         </div>
 
-                        {/* Config Panel (Inspector) */}
-                        <div className="col-span-4 h-full flex flex-col min-h-0">
-                            <InspectorPanel />
+                        {/* Right: Inspector Panel (Configuration) */}
+                        <div className="col-span-7 h-full flex flex-col min-h-0 bg-slate-900">
+                            <StrategyPipeline />
                         </div>
                     </div>
 

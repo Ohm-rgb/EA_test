@@ -12,7 +12,7 @@ export function RuleBuilder() {
     const [rightOp, setRightOp] = useState<number | string>(0);
     const [rightOpType, setRightOpType] = useState<'value' | 'indicator'>('value');
 
-    const canAdd = leftOp && operator && (rightOp !== '' || rightOp === 0) && indicatorPool.length > 0;
+    const canAdd = leftOp && operator && (rightOp !== '' && rightOp !== null) && indicatorPool.length > 0;
 
     const handleAdd = () => {
         if (!canAdd) return;
@@ -55,10 +55,11 @@ export function RuleBuilder() {
                     New Logic Rule
                 </h3>
 
-                <div className="grid grid-cols-12 gap-2 items-center">
+                <div className="flex flex-col gap-4">
 
                     {/* IF Condition Type */}
-                    <div className="col-span-2">
+                    <div className="w-full">
+                        <label className="text-[10px] text-slate-500 uppercase font-bold mb-1 block">Logic Type</label>
                         <select
                             value={type}
                             onChange={(e) => setType(e.target.value as 'buy' | 'sell')}
@@ -69,77 +70,81 @@ export function RuleBuilder() {
                         </select>
                     </div>
 
-                    {/* Left Operand (Indicator) */}
-                    <div className="col-span-3">
-                        <select
-                            value={leftOp}
-                            onChange={(e) => setLeftOp(e.target.value)}
-                            className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-2 text-sm text-white focus:border-blue-500 outline-none"
-                        >
-                            <option value="">Select Indicator...</option>
-                            {indicatorPool.map(ind => (
-                                <option key={ind.id} value={ind.id}>{ind.name} ({ind.indicatorId})</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {/* Operator */}
-                    <div className="col-span-2">
-                        <select
-                            value={operator}
-                            onChange={(e) => setOperator(e.target.value as LogicRule['operator'])}
-                            className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-2 text-sm text-center text-blue-300 font-mono focus:border-blue-500 outline-none"
-                        >
-                            <option value=">">&gt;</option>
-                            <option value="<">&lt;</option>
-                            <option value="==">==</option>
-                            <option value=">=">&ge;</option>
-                            <option value="<=">&le;</option>
-                            <option value="crosses_above">Crosses Above</option>
-                            <option value="crosses_below">Crosses Below</option>
-                        </select>
-                    </div>
-
-                    {/* Right Operand */}
-                    <div className="col-span-3 flex gap-1">
-                        {/* Toggle Value/Indicator */}
-                        <button
-                            onClick={() => setRightOpType(prev => prev === 'value' ? 'indicator' : 'value')}
-                            className="bg-slate-700 text-xs px-1 rounded text-slate-300 hover:bg-slate-600"
-                            title="Toggle Value/Indicator"
-                        >
-                            {rightOpType === 'value' ? '#' : 'ƒ'}
-                        </button>
-
-                        {rightOpType === 'value' ? (
-                            <input
-                                type="number"
-                                value={rightOp}
-                                onChange={(e) => setRightOp(e.target.value)}
-                                className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-2 text-sm text-white focus:border-blue-500 outline-none"
-                                placeholder="Value"
-                            />
-                        ) : (
+                    <div className="flex flex-col gap-2">
+                        {/* Left Operand (Indicator) */}
+                        <div className="w-full">
+                            <label className="text-[10px] text-slate-500 uppercase font-bold mb-1 block">Left Operand</label>
                             <select
-                                value={rightOp}
-                                onChange={(e) => setRightOp(e.target.value)}
+                                value={leftOp}
+                                onChange={(e) => setLeftOp(e.target.value)}
                                 className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-2 text-sm text-white focus:border-blue-500 outline-none"
                             >
                                 <option value="">Select Indicator...</option>
                                 {indicatorPool.map(ind => (
-                                    <option key={ind.id} value={ind.id}>{ind.name}</option>
+                                    <option key={ind.id} value={ind.id}>{ind.name} ({ind.indicatorId})</option>
                                 ))}
                             </select>
-                        )}
+                        </div>
+
+                        {/* Operator */}
+                        <div className="w-full">
+                            {/* <label className="text-[10px] text-slate-500 uppercase font-bold mb-1 block">Operator</label> */}
+                            <select
+                                value={operator}
+                                onChange={(e) => setOperator(e.target.value as LogicRule['operator'])}
+                                className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-sm text-center text-blue-300 font-mono focus:border-blue-500 outline-none"
+                            >
+                                <option value=">">&gt; (Greater)</option>
+                                <option value="<">&lt; (Less)</option>
+                                <option value="==">== (Equal)</option>
+                                <option value=">=">&ge; (Greater Eq)</option>
+                                <option value="<=">&le; (Less Eq)</option>
+                                <option value="crosses_above">Crosses Above</option>
+                                <option value="crosses_below">Crosses Below</option>
+                            </select>
+                        </div>
+
+                        {/* Right Operand */}
+                        <div className="w-full flex gap-1">
+                            {/* Toggle Value/Indicator */}
+                            <button
+                                onClick={() => setRightOpType(prev => prev === 'value' ? 'indicator' : 'value')}
+                                className="bg-slate-700 text-xs px-2 rounded text-slate-300 hover:bg-slate-600 flex-none"
+                                title="Toggle Value/Indicator"
+                            >
+                                {rightOpType === 'value' ? '#' : 'ƒ'}
+                            </button>
+
+                            {rightOpType === 'value' ? (
+                                <input
+                                    type="number"
+                                    value={rightOp}
+                                    onChange={(e) => setRightOp(e.target.value)}
+                                    className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-2 text-sm text-white focus:border-blue-500 outline-none"
+                                    placeholder="Value"
+                                />
+                            ) : (
+                                <select
+                                    value={rightOp}
+                                    onChange={(e) => setRightOp(e.target.value)}
+                                    className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-2 text-sm text-white focus:border-blue-500 outline-none"
+                                >
+                                    <option value="">Select Indicator...</option>
+                                    {indicatorPool.map(ind => (
+                                        <option key={ind.id} value={ind.id}>{ind.name}</option>
+                                    ))}
+                                </select>
+                            )}
+                        </div>
                     </div>
 
                     {/* Add Button */}
-                    <div className="col-span-2">
+                    <div className="w-full mt-2">
                         <button
                             onClick={handleAdd}
                             disabled={!canAdd}
                             className={`
-                                w-full flex items-center justify-center py-2 rounded text-xs font-bold uppercase tracking-wide transition-all
+                                w-full flex items-center justify-center py-3 rounded text-xs font-bold uppercase tracking-wide transition-all
                                 ${canAdd
                                     ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20'
                                     : 'bg-slate-800 text-slate-600 cursor-not-allowed'}

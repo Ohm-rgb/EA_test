@@ -14,6 +14,8 @@ export function InspectorPanel() {
         ? indicatorPool.find(i => i.id === selectedItem.id)
         : null;
 
+    console.log('[InspectorPanel] Render:', { selectedItem, indicatorPoolSize: indicatorPool.length, found: !!selectedIndicator });
+
     // Sync state when selection changes
     useEffect(() => {
         if (selectedIndicator) {

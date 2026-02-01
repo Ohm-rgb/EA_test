@@ -7,6 +7,14 @@ type Phase = 'context' | 'inventory' | 'logic' | 'risk' | 'action';
 
 const PHASES: Phase[] = ['context', 'inventory', 'logic', 'risk', 'action'];
 
+import {
+    LayoutTemplate,
+    Package,
+    GitMerge,
+    ShieldAlert,
+    Zap
+} from 'lucide-react';
+
 export function StrategyPipeline() {
     const {
         contextConfig,
@@ -16,98 +24,80 @@ export function StrategyPipeline() {
         actionConfig
     } = useBotStore();
 
-    // -------------------------------------------------------------------------
-    // SYSTEM CONSTRAINT: Phase Completeness Logic
-    // -------------------------------------------------------------------------
+    // Active Step State (Internal to this panel now)
+    const [activeTab, setActiveTab] = React.useState<Phase>('context');
+
     const phaseStatus = useMemo(() => {
-        const status = {
+        return {
             context: !!(contextConfig.symbol && contextConfig.timeframe),
             inventory: indicatorPool.length > 0,
             logic: (ruleSets.buy.length > 0 || ruleSets.sell.length > 0),
             risk: !!(riskConfig.riskPerTrade > 0 && riskConfig.stopLoss > 0),
-            action: !!(actionConfig.onBuy || actionConfig.onSell) // Strict check for actions
+            action: !!(actionConfig.onBuy || actionConfig.onSell)
         };
-        return status;
     }, [contextConfig, indicatorPool, ruleSets, riskConfig, actionConfig]);
 
-    // -------------------------------------------------------------------------
-    // SYSTEM CONSTRAINT: Phase Access Control
-    // -------------------------------------------------------------------------
-    const canAccess = (phase: Phase) => {
-        const index = PHASES.indexOf(phase);
-        if (index === 0) return true; // Context always accessible
-
-        // Access if previous complete OR if this phase is already complete (re-visiting)
-        const prevPhase = PHASES[index - 1];
-        return phaseStatus[prevPhase] || phaseStatus[phase];
-    };
+    const tabs: { id: Phase; label: string; icon: React.ReactNode }[] = [
+        { id: 'context', label: 'Context', icon: <LayoutTemplate className="w-4 h-4" /> },
+        { id: 'inventory', label: 'Inventory', icon: <Package className="w-4 h-4" /> },
+        { id: 'logic', label: 'Logic', icon: <GitMerge className="w-4 h-4" /> },
+        { id: 'risk', label: 'Risk', icon: <ShieldAlert className="w-4 h-4" /> },
+        { id: 'action', label: 'Action', icon: <Zap className="w-4 h-4" /> },
+    ];
 
     return (
-        <div className="w-full h-full flex flex-col bg-slate-900 overflow-hidden">
-            {/* Pipeline Header / Progress Bar */}
-            <div className="flex items-center justify-between p-4 border-b border-slate-700 bg-slate-900/50">
-                {PHASES.map((phase, i) => {
-                    const isComplete = phaseStatus[phase];
-                    const isAccessible = canAccess(phase);
+        <div className="w-full h-full flex flex-col bg-slate-900 border-l border-slate-700/50">
+            {/* 1. Tab Switcher Header */}
+            <div className="flex items-center justify-between p-2 bg-slate-950 border-b border-slate-800">
+                {tabs.map((tab) => {
+                    const isActive = activeTab === tab.id;
+                    const isComplete = phaseStatus[tab.id];
 
                     return (
-                        <div key={phase} className={`flex items-center ${i < PHASES.length - 1 ? 'flex-1' : ''}`}>
-                            {/* Node */}
-                            <div className={`
-                                relative z-10 flex items-center justify-center w-8 h-8 rounded-full border-2 
-                                text-xs font-bold transition-all duration-300
-                                ${isComplete ? 'bg-emerald-500 border-emerald-500 text-white' :
-                                    isAccessible ? 'bg-slate-800 border-blue-500 text-blue-200 shadow-[0_0_10px_rgba(59,130,246,0.5)]' :
-                                        'bg-slate-800 border-slate-700 text-slate-600'}
-                            `}>
-                                {isComplete ? '✓' : i + 1}
-                            </div>
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            title={tab.label}
+                            className={`
+                                relative flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 group
+                                ${isActive
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50'
+                                    : 'bg-transparent text-slate-500 hover:bg-slate-800 hover:text-slate-300'}
+                            `}
+                        >
+                            {tab.icon}
 
-                            {/* Label */}
-                            <div className="ml-2 mr-4">
-                                <span className={`text-xs uppercase tracking-wider font-semibold ${isAccessible ? 'text-slate-200' : 'text-slate-600'
-                                    }`}>
-                                    {phase}
-                                </span>
-                            </div>
-
-                            {/* Connector Line */}
-                            {i < PHASES.length - 1 && (
-                                <div className={`flex-1 h-0.5 mx-2 ${isComplete ? 'bg-emerald-500/50' : 'bg-slate-800'
-                                    }`} />
+                            {/* Status Dot */}
+                            {isComplete && !isActive && (
+                                <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full border-2 border-slate-950" />
                             )}
-                        </div>
+
+                            {/* Tooltip (Simple) */}
+                            <span className="absolute -bottom-8 bg-slate-900 text-slate-200 text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none border border-slate-700">
+                                {tab.label}
+                            </span>
+                        </button>
                     );
                 })}
             </div>
 
-            {/* Pipeline Content Area */}
-            <div className="flex-1 relative overflow-auto p-6">
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 h-full">
-                    {PHASES.map((phase) => (
-                        <div
-                            key={phase}
-                            className={`
-                                relative flex flex-col border rounded-lg p-4 h-full transition-opacity duration-300
-                                ${canAccess(phase)
-                                    ? 'opacity-100 border-slate-700 bg-slate-800/20'
-                                    : 'opacity-40 border-slate-800 bg-slate-900/10 pointer-events-none grayscale'}
-                            `}
-                        >
-                            <h3 className="text-sm font-bold text-slate-400 mb-4 uppercase">{phase}</h3>
+            {/* 2. Content Area */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-900/50 p-4">
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="mb-4 flex items-center gap-2 pb-2 border-b border-white/5">
+                        <span className="bg-slate-800 p-1.5 rounded text-blue-400">
+                            {tabs.find(t => t.id === activeTab)?.icon}
+                        </span>
+                        <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider">
+                            {tabs.find(t => t.id === activeTab)?.label} Configuration
+                        </h3>
+                    </div>
 
-                            {/* Access Denied Overlay removed for better UX on revisit */}
-
-                            {/* Content Slot */}
-                            <div className="flex-1 overflow-hidden flex flex-col relative">
-                                {phase === 'context' && <ContextPhase />}
-                                {phase === 'inventory' && <InventoryPhase />}
-                                {phase === 'logic' && <RuleBuilder />}
-                                {phase === 'risk' && <RiskPhase />}
-                                {phase === 'action' && <ActionPhase />}
-                            </div>
-                        </div>
-                    ))}
+                    {activeTab === 'context' && <ContextPhase />}
+                    {activeTab === 'inventory' && <InventoryPhase />}
+                    {activeTab === 'logic' && <RuleBuilder />}
+                    {activeTab === 'risk' && <RiskPhase />}
+                    {activeTab === 'action' && <ActionPhase />}
                 </div>
             </div>
         </div>

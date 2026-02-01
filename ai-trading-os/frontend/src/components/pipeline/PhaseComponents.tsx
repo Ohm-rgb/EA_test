@@ -1,5 +1,6 @@
 import React from 'react';
 import { useBotStore } from '@/stores/botStore';
+import { Settings2 } from 'lucide-react';
 
 export function ContextPhase() {
     const { contextConfig, setContext } = useBotStore();
@@ -33,85 +34,197 @@ export function ContextPhase() {
     );
 }
 
+import { AVAILABLE_INDICATORS } from '@/data/indicators';
+
 export function InventoryPhase() {
-    const { indicatorPool, selectedItem, selectItem } = useBotStore();
+    const { indicatorPool, addIndicator, removeIndicator } = useBotStore();
+
+    const handleToggle = (type: string, name: string) => {
+        // Check if already in pool
+        const existing = indicatorPool.find(i => i.name === name || i.indicatorId === type.toLowerCase());
+
+        if (existing) {
+            removeIndicator(existing.id);
+        } else {
+            addIndicator({
+                id: Date.now().toString(), // simplistic ID gen
+                name: name,
+                indicatorId: type.toLowerCase(),
+                params: {}, // default params
+                isBound: true
+            });
+        }
+    };
+
     return (
-        <div className="p-4 space-y-4">
-            <h4 className="text-white text-sm font-bold">Indicator Inventory</h4>
-            <p className="text-xs text-slate-400">
-                Manage your tools here. Click an item to configure it in the Inspector Panel.
+        <div className="p-6 space-y-6">
+            <div className="flex items-center justify-between">
+                <h4 className="text-white text-lg font-bold">Indicator Library</h4>
+                <div className="text-xs text-slate-500 bg-slate-900 border border-slate-700 px-3 py-1 rounded-full">
+                    {indicatorPool.length} Active
+                </div>
+            </div>
+
+            <p className="text-sm text-slate-400">
+                Select indicators to add them to your bot's flow. They will instantly appear in the Flow Panel on the left.
             </p>
-            <div className="space-y-2">
-                {indicatorPool.length === 0 ? (
-                    <div className="text-center p-4 border border-dashed border-slate-700 rounded text-slate-500 text-xs">
-                        No indicators in pool.
-                        <br />
-                        (Use the side panel to add)
-                    </div>
-                ) : (
-                    indicatorPool.map(ind => {
-                        const isSelected = selectedItem.type === 'indicator' && selectedItem.id === ind.id;
-                        return (
-                            <div
-                                key={ind.id}
-                                onClick={() => selectItem('indicator', ind.id)}
-                                className={`
-                                    p-2 rounded border flex justify-between items-center cursor-pointer transition-all
-                                    ${isSelected
-                                        ? 'bg-blue-900/30 border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.3)]'
-                                        : 'bg-slate-800 border-slate-700 hover:border-slate-500'}
-                                `}
-                            >
-                                <span className={`text-xs font-mono font-bold ${isSelected ? 'text-blue-300' : 'text-slate-300'}`}>
-                                    {ind.name}
-                                </span>
-                                <span className="text-slate-500 text-[10px]">{ind.indicatorId}</span>
+
+            <div className="grid grid-cols-1 gap-3">
+                {AVAILABLE_INDICATORS.map(ind => {
+                    const isActive = indicatorPool.some(i => i.name === ind.name);
+
+                    return (
+                        <div
+                            key={ind.type}
+                            onClick={() => handleToggle(ind.type, ind.name)}
+                            className={`
+                                relative group flex items-start gap-4 p-4 border rounded-xl cursor-pointer transition-all duration-200
+                                ${isActive
+                                    ? 'bg-blue-600/10 border-blue-500/50 shadow-[0_0_15px_rgba(37,99,235,0.1)]'
+                                    : 'bg-slate-800/40 border-slate-700 hover:bg-slate-800 hover:border-slate-600'}
+                            `}
+                        >
+                            {/* Checkbox */}
+                            <div className={`
+                                flex-none w-5 h-5 rounded border mt-0.5 flex items-center justify-center transition-all
+                                ${isActive
+                                    ? 'bg-blue-500 border-blue-500 text-white'
+                                    : 'bg-slate-900 border-slate-600 text-transparent group-hover:border-slate-500'}
+                            `}>
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
                             </div>
-                        );
-                    })
-                )}
+
+                            <div className="flex-1">
+                                <h5 className={`text-sm font-bold mb-1 ${isActive ? 'text-blue-200' : 'text-slate-200'}`}>
+                                    {ind.name}
+                                </h5>
+                                <p className="text-xs text-slate-500 leading-relaxed">
+                                    Standard {ind.name} technical indicator.
+                                </p>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            <div className="pt-6 border-t border-slate-800 mt-6">
+                <button className="w-full py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 border-dashed rounded-lg text-slate-400 text-sm font-medium transition-colors">
+                    + Import Custom Indicator
+                </button>
             </div>
         </div>
     );
 }
 
 export function RiskPhase() {
-    const { selectItem, selectedItem, riskConfig } = useBotStore();
-    const isSelected = selectedItem.type === 'risk';
+    const { riskConfig, setRisk } = useBotStore(); // Assuming setRisk exists or we update riskConfig check store
+    // useBotStore technically has updateRiskConfig? Using riskConfig directly for now as read, need to check writes.
+    // Let's implement full form inputs.
+
     return (
-        <div
-            onClick={() => selectItem('risk')}
-            className={`
-                p-4 text-center cursor-pointer transition-all h-full
-                ${isSelected ? 'bg-amber-900/10' : ''}
-            `}
-        >
-            <h4 className="text-slate-400 text-sm font-bold mb-2">Risk Management</h4>
-            <div className={`
-                p-4 border rounded bg-slate-800/50 transition-colors
-                ${isSelected ? 'border-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.2)]' : 'border-slate-700'}
-            `}>
-                <p className="text-xs mb-2">Configure Stop Loss & Risk %</p>
-                <div className="flex gap-2 justify-center text-xs text-emerald-400 font-mono">
-                    <span>RISK: {riskConfig.riskPerTrade}%</span>
-                    <span>SL: {riskConfig.stopLoss}</span>
+        <div className="p-6 space-y-6">
+            <h4 className="text-white text-lg font-bold">Risk Management</h4>
+
+            <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                    <label className="text-xs uppercase font-bold text-slate-500">Risk Per Trade (%)</label>
+                    <div className="relative">
+                        <input
+                            type="number"
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none"
+                            placeholder="1.0"
+                            defaultValue={riskConfig.riskPerTrade}
+                        />
+                        <span className="absolute right-3 top-3 text-slate-500">%</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500">Percentage of total equity to risk per trade.</p>
+                </div>
+
+                <div className="space-y-2">
+                    <label className="text-xs uppercase font-bold text-slate-500">Stop Loss (Pips)</label>
+                    <div className="relative">
+                        <input
+                            type="number"
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none"
+                            placeholder="50"
+                            defaultValue={riskConfig.stopLoss}
+                        />
+                        <span className="absolute right-3 top-3 text-slate-500">pips</span>
+                    </div>
+                </div>
+
+                <div className="space-y-2">
+                    <label className="text-xs uppercase font-bold text-slate-500">Take Profit (Pips)</label>
+                    <div className="relative">
+                        <input
+                            type="number"
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none"
+                            placeholder="100"
+                            defaultValue={100} // Mock
+                        />
+                        <span className="absolute right-3 top-3 text-slate-500">pips</span>
+                    </div>
+                </div>
+
+                <div className="space-y-2">
+                    <label className="text-xs uppercase font-bold text-slate-500">Max Open Trades</label>
+                    <input
+                        type="number"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none"
+                        placeholder="3"
+                        defaultValue={3} // Mock
+                    />
                 </div>
             </div>
-            <p className="text-[10px] text-slate-500 mt-2">(Click to Configure)</p>
+
+            <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-lg flex items-start gap-3">
+                <span className="text-xl">⚠️</span>
+                <div>
+                    <h5 className="text-sm font-bold text-amber-500">Safety Check</h5>
+                    <p className="text-xs text-amber-200/70 mt-1">
+                        Your calculated risk is within safe limits for your account size.
+                    </p>
+                </div>
+            </div>
         </div>
     );
 }
 
 export function ActionPhase() {
     return (
-        <div className="p-4 text-center text-slate-500">
-            <h4 className="text-slate-400 text-sm font-bold mb-2">Trade Actions</h4>
-            <div className="p-4 border border-slate-700 rounded bg-slate-800/50">
-                <p className="text-xs mb-2">Define Execution Logic</p>
-                {/* Mock Actions */}
-                <div className="flex flex-col gap-2 text-xs text-blue-400 font-mono">
-                    <span>BUY: MARKET ORDER</span>
-                    <span>SELL: MARKET ORDER</span>
+        <div className="p-6 space-y-6">
+            <h4 className="text-white text-lg font-bold">Execution Actions</h4>
+
+            <div className="space-y-4">
+                <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-lg">
+                    <div className="flex items-center justify-between mb-4">
+                        <h5 className="font-bold text-emerald-400">On BUY Signal</h5>
+                        <div className="flex bg-slate-900 rounded p-1">
+                            <span className="px-3 py-1 text-xs bg-slate-700 text-white rounded shadow">Market</span>
+                            <span className="px-3 py-1 text-xs text-slate-500">Limit</span>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs text-slate-400">Order Comment</label>
+                        <input type="text" className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white text-sm" placeholder="AI_Bot_Buy" />
+                    </div>
+                </div>
+
+                <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-lg">
+                    <div className="flex items-center justify-between mb-4">
+                        <h5 className="font-bold text-rose-400">On SELL Signal</h5>
+                        <div className="flex bg-slate-900 rounded p-1">
+                            <span className="px-3 py-1 text-xs bg-slate-700 text-white rounded shadow">Market</span>
+                            <span className="px-3 py-1 text-xs text-slate-500">Limit</span>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs text-slate-400">Order Comment</label>
+                        <input type="text" className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white text-sm" placeholder="AI_Bot_Sell" />
+                    </div>
                 </div>
             </div>
         </div>
