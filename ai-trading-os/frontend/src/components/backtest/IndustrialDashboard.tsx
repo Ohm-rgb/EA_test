@@ -130,13 +130,40 @@ export function IndustrialDashboard({
 
     const handleDeleteIndicator = async (indicatorId: string) => {
         if (!window.confirm("Are you sure you want to permanently delete this indicator?")) return;
+
         try {
             await BotApi.deleteIndicator(indicatorId);
+            // 1. Update State Immediately
             setManagedIndicators(prev => prev.filter(ind => ind.id !== indicatorId));
-            if (activeContextId === indicatorId) setActiveContextId(null); // Clear context if deleted
+            if (activeContextId === indicatorId) setActiveContextId(null);
         } catch (error: any) {
             console.error("Delete Failed:", error);
-            alert(`Failed to delete: ${error.message || 'Unknown error'}`);
+
+            // 2. Check for Binding Conflict (409)
+            // Note: fetchJson throws the error response body
+            const isConflict = error.status === 409 ||
+                (error.message && error.message.includes("bound")) ||
+                (error.message && error.message.includes("Error (409)"));
+
+            if (isConflict) {
+                const shouldForce = window.confirm(
+                    `Cannot delete normally: ${error.message || 'It is bound to a bot.'}\n\nDo you want to FORCE DELETE? ( This will unbind it from all bots )`
+                );
+
+                if (shouldForce) {
+                    try {
+                        await BotApi.deleteIndicator(indicatorId, true); // Force delete
+                        // Update State Forcefully
+                        setManagedIndicators(prev => prev.filter(ind => ind.id !== indicatorId));
+                        if (activeContextId === indicatorId) setActiveContextId(null);
+                        alert("Force deleted successfully.");
+                    } catch (forceError: any) {
+                        alert(`Force delete failed: ${forceError.message}`);
+                    }
+                }
+            } else {
+                alert(`Failed to delete: ${error.message || 'Unknown error'}`);
+            }
         }
     };
 
@@ -222,9 +249,10 @@ export function IndustrialDashboard({
                             <IntegrityInspector
                                 indicator={activeContextIndicator}
                                 capability={
-                                    activeContextIndicator.name.includes('Smart Money')
+                                    activeContextIndicator.params?.capability_schema ||
+                                    (activeContextIndicator.name.includes('Smart Money')
                                         ? SmartMoneyConceptsCapability
-                                        : GenericCapability
+                                        : GenericCapability)
                                 }
                                 onSave={handleSaveConfig}
                             />

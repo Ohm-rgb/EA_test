@@ -102,6 +102,7 @@ export interface ManagedIndicator {
 
     // Configuration
     config?: Record<string, any>;       // [NEW] Active configuration values
+    params?: Record<string, any>;       // [NEW] Raw params from backend (includes capability_schema)
 
     // Sub-signals configuration
     subSignals: SubSignalConfig[];

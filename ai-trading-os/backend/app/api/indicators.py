@@ -36,6 +36,8 @@ class IndicatorResponse(BaseModel):
         orm_mode = True
 
 
+from sqlalchemy import or_ # Added import
+
 @router.get("", response_model=List[IndicatorResponse])
 def get_indicators(
     bot_id: Optional[str] = None, 
@@ -45,7 +47,7 @@ def get_indicators(
 ):
     query = db.query(models.StrategyPackage).filter(models.StrategyPackage.user_id == current_user.id)
     if bot_id:
-        query = query.filter(models.StrategyPackage.bot_id == bot_id)
+        query = query.filter(or_(models.StrategyPackage.bot_id == bot_id, models.StrategyPackage.bot_id == None))
     if status:
         query = query.filter(models.StrategyPackage.status == status)
     return query.all()
@@ -128,8 +130,13 @@ def update_indicator_config(ind_id: str, payload: IndicatorConfigUpdate, db: Ses
     # 3. Store old hash for comparison
     old_hash = ind.config_hash
     
-    # 4. Update Configuration
-    ind.params = payload.config
+    # 4. Update Configuration (Partial merge to preserve capability_schema)
+    current_params = dict(ind.params) if ind.params else {}
+    current_params.update(payload.config)
+    ind.params = current_params
+    
+    from sqlalchemy.orm.attributes import flag_modified
+    flag_modified(ind, "params")
     
     # 5. Generate new config hash
     new_hash = generate_config_hash(payload.config)
@@ -149,34 +156,36 @@ def update_indicator_config(ind_id: str, payload: IndicatorConfigUpdate, db: Ses
     }
 
 @router.delete("/{ind_id}")
-def delete_indicator(ind_id: str, db: Session = Depends(get_db)):
+def delete_indicator(ind_id: str, force: bool = False, db: Session = Depends(get_db)):
     # 1. Fetch Indicator
     ind = db.query(models.StrategyPackage).filter(models.StrategyPackage.id == ind_id).first()
     if not ind:
         raise HTTPException(status_code=404, detail="Indicator not found")
 
     # 2. Guard: Check for Active Bindings
-    # Check if this indicator is bound to any bots (using the new binding table or logic)
-    # For now, check if 'bot_id' is set OR if it's in the 'indicator_bindings' table
-    
-    # Check direct binding
     if ind.bot_id:
-        bot = db.query(models.Bot).filter(models.Bot.id == ind.bot_id).first()
-        if bot:
+        if force:
+            # FORCE DELETE: Unbind first
+            ind.bot_id = None
+            db.commit() # Commit unbind first
+        else:
+            bot = db.query(models.Bot).filter(models.Bot.id == ind.bot_id).first()
+            bot_name = bot.name if bot else "Unknown Bot"
             raise HTTPException(
                 status_code=409, 
-                detail=f"Cannot delete indicator: Bound to bot '{bot.name}'. Please unbind first."
+                detail=f"Indicator is bound to bot '{bot_name}'. Pass ?force=true to unbind and delete."
             )
             
-    # Check many-to-many bindings (if table exists)
+    # Check many-to-many bindings (future proofing)
     # active_bindings = db.query(models.BotIndicatorBinding).filter(models.BotIndicatorBinding.indicator_id == ind_id).all()
     # if active_bindings:
-    #      raise HTTPException(status_code=409, detail="Cannot delete: Indicator is bound to one or more bots.")
+    #     if force:
+    #         for b in active_bindings: db.delete(b)
+    #         db.commit()
+    #     else:
+    #          raise HTTPException(status_code=409, detail="Indicator is bound to one or more bots.")
 
-    # 3. Archive check (Optional: Require status to be 'archived' first?)
-    # User requested 'delete', so we allow direct delete if safe.
-
-    # 4. Perform Delete
+    # 3. Perform Delete
     try:
         db.delete(ind)
         db.commit()

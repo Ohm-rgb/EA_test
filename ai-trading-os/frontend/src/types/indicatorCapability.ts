@@ -36,11 +36,18 @@ export interface SignalControl extends BaseControl {
     actions: ('Buy' | 'Sell' | 'Close')[];
 }
 
+export interface TextControl extends BaseControl {
+    type: 'text';
+    default: string;
+    placeholder?: string;
+}
+
 export type Control =
     | ToggleControl
     | SelectControl
     | NumberControl
     | ColorControl
+    | TextControl
     | SignalControl;
 
 export interface Section {

@@ -102,8 +102,9 @@ export const BotApi = {
         });
     },
 
-    async deleteIndicator(id: string): Promise<any> {
-        return fetchJson<any>(`/indicators/${id}`, { method: 'DELETE' });
+    async deleteIndicator(id: string, force: boolean = false): Promise<any> {
+        const url = force ? `/indicators/${id}?force=true` : `/indicators/${id}`;
+        return fetchJson<any>(url, { method: 'DELETE' });
     },
 
     // --- Rules ---

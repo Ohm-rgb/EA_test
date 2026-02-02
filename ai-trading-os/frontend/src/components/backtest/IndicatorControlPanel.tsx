@@ -157,6 +157,21 @@ export function IndicatorControlPanel({
                     </div>
                 );
 
+            case 'text':
+                return (
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wide">{control.label}</label>
+                        <input
+                            type="text"
+                            value={value}
+                            placeholder={(control as any).placeholder}
+                            onChange={(e) => handleChange(control.bind, e.target.value)}
+                            disabled={disabled}
+                            className={`w-full bg-[var(--bg-tertiary)] border border-[var(--glass-border)] text-white px-4 py-2 rounded-lg focus:outline-none focus:border-[var(--color-accent)] transition-colors ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        />
+                    </div>
+                );
+
             default:
                 return null;
         }

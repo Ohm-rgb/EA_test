@@ -70,7 +70,11 @@ export function IntegrityInspector({ indicator, capability, onSave }: IntegrityI
                 }))
             ];
             setChecks(newChecks);
-        } catch (error) {
+        } catch (error: any) {
+            // Ignore 404 errors (likely deleted while inspecting)
+            if (error.message && error.message.includes('404')) {
+                return;
+            }
             console.error(error);
         } finally {
             setIsRunning(false);

@@ -107,13 +107,25 @@ export function IndicatorManagementPanel({
 
                 {/* Primary State Action */}
                 {indicator.status === 'draft' && (
-                    <button
-                        onClick={() => handleStatusToggle(indicator)}
-                        disabled={!hasTestResult}
-                        className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${hasTestResult ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30' : 'bg-gray-500/10 text-gray-500 cursor-not-allowed'}`}
-                    >
-                        {hasTestResult ? 'Mark Ready' : 'Need Test'}
-                    </button>
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => handleStatusToggle(indicator)}
+                            disabled={!hasTestResult}
+                            className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${hasTestResult ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30' : 'bg-gray-500/10 text-gray-500 cursor-not-allowed'}`}
+                        >
+                            {hasTestResult ? 'Mark Ready' : 'Need Test'}
+                        </button>
+                        {/* Direct Delete for Draft (no bots attached) */}
+                        {onDelete && indicator.boundBotIds.length === 0 && (
+                            <button
+                                onClick={() => onDelete(indicator.id)}
+                                className="px-2 py-1.5 rounded text-xs font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all"
+                                title="Delete Draft"
+                            >
+                                🗑️ Delete
+                            </button>
+                        )}
+                    </div>
                 )}
                 {indicator.status === 'ready' && (
                     <button onClick={() => handleStatusToggle(indicator)} className="px-3 py-1.5 rounded text-xs font-medium bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-all">

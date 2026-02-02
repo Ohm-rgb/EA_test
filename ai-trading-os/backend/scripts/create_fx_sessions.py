@@ -1,20 +1,36 @@
 """
 Script to create FX Market Sessions indicator manually
 """
+import os
 from app.core.database import SessionLocal
 from app.models.bot import StrategyPackage
 import uuid
 import hashlib
 import json
 
-db = SessionLocal()
+def get_pine_code():
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    pine_path = os.path.join(current_dir, 'fx_sessions.pine')
+    try:
+        with open(pine_path, 'r', encoding='utf-8') as f:
+            return f.read()
+    except Exception as e:
+        print(f"Error reading pine file: {e}")
+        return None
 
-# Check if already exists
-existing = db.query(StrategyPackage).filter(StrategyPackage.name == 'FX Market Sessions').first()
-if existing:
-    print(f'Indicator already exists: {existing.id}')
-else:
-    # Create comprehensive params for the indicator
+def main():
+    db = SessionLocal()
+    
+    # Read Pine Script
+    pine_code = get_pine_code()
+    if not pine_code:
+        print("Could not read pine code.")
+        return
+
+    # Check if already exists
+    existing = db.query(StrategyPackage).filter(StrategyPackage.name == 'FX Market Sessions').first()
+    
+    # Define Params
     params = {
         'schemaVersion': '1.0',
         'sourceType': 'pine_script',
@@ -33,32 +49,47 @@ else:
             {'id': 4, 'name': 'NY End', 'type': 'session_end', 'session': 'newyork', 'enabled': True},
             {'id': 5, 'name': 'Tokyo Start', 'type': 'session_start', 'session': 'tokyo', 'enabled': True},
             {'id': 6, 'name': 'Tokyo End', 'type': 'session_end', 'session': 'tokyo', 'enabled': True},
-            {'id': 7, 'name': 'Session High Breakout', 'type': 'breakout_high', 'enabled': True},
-            {'id': 8, 'name': 'Session Low Breakout', 'type': 'breakout_low', 'enabled': True}
+            {'id': 7, 'name': 'Sydney Start', 'type': 'session_start', 'session': 'sydney', 'enabled': True},
+            {'id': 8, 'name': 'Sydney End', 'type': 'session_end', 'session': 'sydney', 'enabled': True},
+            {'id': 9, 'name': 'Session High Breakout', 'type': 'breakout_high', 'enabled': True},
+            {'id': 10, 'name': 'Session Low Breakout', 'type': 'breakout_low', 'enabled': True}
         ],
-        'features': ['opening_range', 'fibonacci_levels', 'session_boxes', 'session_labels']
+        'features': ['opening_range', 'fibonacci_levels', 'session_boxes', 'session_labels'],
+        'pine_code': pine_code
     }
     
     config_hash = hashlib.sha256(json.dumps(params, sort_keys=True).encode()).hexdigest()[:16]
-    
-    indicator = StrategyPackage(
-        id=f'fx_sessions_{uuid.uuid4().hex[:8]}',
-        user_id=1,
-        name='FX Market Sessions',
-        type='Session',
-        source='Time',
-        period=0,
-        params=params,
-        status='draft',
-        config_hash=config_hash,
-        bot_id=None
-    )
-    
-    db.add(indicator)
-    db.commit()
-    db.refresh(indicator)
-    print(f'Created indicator: {indicator.id}')
-    print(f'Name: {indicator.name}')
-    print(f'Signals: {len(params["signals"])}')
 
-db.close()
+    if existing:
+        print(f'Updating existing indicator: {existing.id}')
+        existing.params = params
+        existing.config_hash = config_hash
+        existing.status = 'active'
+        db.commit()
+        db.refresh(existing)
+        print(f'Updated {existing.name}')
+    else:
+        indicator = StrategyPackage(
+            id=f'fx_sessions_{uuid.uuid4().hex[:8]}',
+            user_id=1,
+            name='FX Market Sessions',
+            type='Session',
+            source='Time',
+            period=0,
+            params=params,
+            status='active',
+            config_hash=config_hash,
+            bot_id=None
+        )
+        
+        db.add(indicator)
+        db.commit()
+        db.refresh(indicator)
+        print(f'Created indicator: {indicator.id}')
+        print(f'Name: {indicator.name}')
+        print(f'Signals: {len(params["signals"])}')
+
+    db.close()
+
+if __name__ == "__main__":
+    main()
