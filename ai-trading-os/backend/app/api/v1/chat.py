@@ -242,21 +242,40 @@ Your only job is to extract structure from Pine Script code into JSON.
 6. Return ONLY valid JSON matching the schema below - no markdown, no explanation
 7. For complex scripts with many features, extract the TOP 3-5 most important trading signals
 
+## Pine Script v6 Features (HANDLE GRACEFULLY)
+- `import library/Name/version as alias` → IGNORE library imports, focus on main code logic
+- `type TypeName` → IGNORE type definitions, focus on what types are used for
+- `method methodName(this)` → IGNORE method syntax, extract the calculation logic
+- Complex UDT (User-Defined Types) → Flatten to simple indicator concepts
+- `array<type>`, `matrix<type>` → IGNORE data structures, focus on trading logic
+
+## Session-Based Indicators Mapping
+When you see these patterns, treat them as "Session" type indicators:
+- `time(timeframe.period, session, timezone)` → Session-based timing
+- `input.session('HHMM-HHMM')` → Session time range configuration
+- Multiple sessions (London, NY, Tokyo, Sydney) → Multiple sub-indicators
+
+For Session indicators, use these standardized signals:
+- alertcondition for "Session started" → { operator: "session_start", action: "Alert" }
+- alertcondition for "Session ended" → { operator: "session_end", action: "Alert" }
+- Session High crossed → { operator: "crosses_above", action: "Breakout Long" }
+- Session Low crossed → { operator: "crosses_below", action: "Breakout Short" }
+
 ## Target Schema
 {
   "schemaVersion": "1.0",
   "status": "success" | "partial" | "failed",
   "warning": "Optional warning message",
   "indicators": [
-    { "id": "unique_id", "type": "RSI|EMA|SMA|MACD|BollingerBands|Price|Volume|ATR|Custom", "period": number, "source": "Close|Open|High|Low" }
+    { "id": "unique_id", "type": "RSI|EMA|SMA|MACD|BollingerBands|Price|Volume|ATR|Session|Custom", "period": number, "source": "Close|Open|High|Low|Time" }
   ],
   "rules": [
     {
       "id": number,
       "indicator": "Indicator Type or Signal Name",
-      "operator": "crosses_above|crosses_below|greater_than|less_than|equals|signal",
+      "operator": "crosses_above|crosses_below|greater_than|less_than|equals|signal|session_start|session_end",
       "value": number or null,
-      "action": "Buy|Sell|Close Position|Signal",
+      "action": "Buy|Sell|Close Position|Signal|Alert|Breakout Long|Breakout Short",
       "isEnabled": true
     }
   ]
@@ -274,6 +293,12 @@ Your only job is to extract structure from Pine Script code into JSON.
 - alertcondition(bullishFVG, 'Bullish FVG') → { "indicator": "FVG", "operator": "signal", "value": null, "action": "Buy" }
 - alertcondition(bearishFVG, 'Bearish FVG') → { "indicator": "FVG", "operator": "signal", "value": null, "action": "Sell" }
 - alertcondition(orderBlock, 'Order Block') → { "indicator": "OrderBlock", "operator": "signal", "value": null, "action": "Signal" }
+
+## Session Indicator Extraction (FX Market Sessions, ICT Killzones, etc)
+- alertcondition(sess1_started, 'Session #1 started') → { "indicator": "London Session", "operator": "session_start", "action": "Alert" }
+- alertcondition(sess1_ended, 'Session #1 ended') → { "indicator": "London Session", "operator": "session_end", "action": "Alert" }
+- alertcondition(ta.crossover(close, sess1_high), ...) → { "indicator": "London High", "operator": "crosses_above", "action": "Breakout Long" }
+- alertcondition(ta.crossunder(close, sess1_low), ...) → { "indicator": "London Low", "operator": "crosses_below", "action": "Breakout Short" }
 
 ## Smart Money Concepts Mapping
 - BOS (Break of Structure) Bullish → Buy signal
