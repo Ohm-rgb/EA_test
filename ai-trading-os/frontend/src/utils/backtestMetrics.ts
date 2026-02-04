@@ -69,19 +69,46 @@ export function calculateBacktestMetrics(
     const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? 999 : 0; // 999 as infinite
     const netProfit = currentEquity - initialBalance;
 
-    // Simplified Sharpe (assuming 0 risk free rate, daily returns approximated by trade returns)
-    // This is not scientifically accurate but enough for visual approximation
+    // Risk-Adjusted Returns Calculation
+    // Using trade returns instead of daily returns (more accurate for variable trade frequency)
     const returns = sortedTrades.map(t => (t.profit || 0));
     const avgReturn = returns.length > 0 ? returns.reduce((a, b) => a + b, 0) / returns.length : 0;
-    const stdDev = returns.length > 0 ? Math.sqrt(returns.map(x => Math.pow(x - avgReturn, 2)).reduce((a, b) => a + b, 0) / returns.length) : 0;
-    const sharpeRatio = stdDev > 0 ? (avgReturn / stdDev) * Math.sqrt(252) : 0; // Annualized assuming daily trades? Rough approx.
+
+    // Standard Deviation (for Sharpe Ratio) - all deviations from mean
+    const stdDev = returns.length > 1
+        ? Math.sqrt(returns.map(x => Math.pow(x - avgReturn, 2)).reduce((a, b) => a + b, 0) / (returns.length - 1))
+        : 0;
+
+    // Downside Deviation (for Sortino Ratio) - only negative deviations from target (0)
+    const targetReturn = 0; // MAR (Minimum Acceptable Return)
+    const negativeReturns = returns.filter(r => r < targetReturn);
+    const downsideDeviation = negativeReturns.length > 1
+        ? Math.sqrt(negativeReturns.map(x => Math.pow(x - targetReturn, 2)).reduce((a, b) => a + b, 0) / (negativeReturns.length - 1))
+        : 0;
+
+    // Time period calculations
+    const startTime = sortedTrades.length > 0 ? new Date(sortedTrades[0].opened_at) : new Date();
+    const endTime = sortedTrades.length > 0 ? new Date(sortedTrades[sortedTrades.length - 1].opened_at) : new Date();
+
+    // Calculate annualization factor based on trade frequency
+    // Estimate trades per year: if we have N trades over the test period, extrapolate
+    const testDays = sortedTrades.length > 0
+        ? (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60 * 24)
+        : 1;
+    const tradesPerDay = testDays > 0 ? totalTrades / testDays : 1;
+    const annualizationFactor = Math.sqrt(tradesPerDay * 252); // Annualized based on actual frequency
+
+    // Sharpe Ratio = (Average Return - Risk Free Rate) / Std Dev * Annualization
+    // Assuming risk-free rate = 0 for simplicity
+    const sharpeRatio = stdDev > 0 ? (avgReturn / stdDev) * annualizationFactor : 0;
+
+    // Sortino Ratio = (Average Return - MAR) / Downside Deviation * Annualization
+    // Higher is better - only penalizes downside volatility, not upside
+    const sortinoRatio = downsideDeviation > 0 ? (avgReturn / downsideDeviation) * annualizationFactor : (avgReturn > 0 ? 999 : 0);
 
     // Distributions
     const dayDistribution = calculateDayDistribution(sortedTrades);
     const hourDistribution = calculateHourDistribution(sortedTrades);
-
-    const startTime = sortedTrades.length > 0 ? new Date(sortedTrades[0].opened_at) : new Date();
-    const endTime = sortedTrades.length > 0 ? new Date(sortedTrades[sortedTrades.length - 1].opened_at) : new Date();
 
     return {
         id: `real_${botId}_${Date.now()}`,
@@ -101,7 +128,7 @@ export function calculateBacktestMetrics(
         maxDrawdown: Number(maxDrawdownPercent.toFixed(1)),
         maxDrawdownValue: Number(maxDrawdownValue.toFixed(2)),
         sharpeRatio: Number(sharpeRatio.toFixed(2)),
-        sortinoRatio: 0, // Not implemented yet
+        sortinoRatio: Number(Math.min(sortinoRatio, 999).toFixed(2)), // Cap at 999 for display
         equityCurve,
         dayOfWeekDistribution: dayDistribution,
         hourOfDayDistribution: hourDistribution
