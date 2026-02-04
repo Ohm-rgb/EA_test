@@ -1,26 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { GlassCard, Button, Chip, Badge } from "@/components/ui";
+import { useState, useEffect, useCallback } from 'react';
+import { GlassCard } from "@/components/ui";
 import { PineScriptImportModal } from "@/components/modals/PineScriptImportModal";
-import { StrategyPackageCard, StrategyPackageModal } from "@/components/strategy";
+import { StrategyPackageModal } from "@/components/strategy";
 import { IndustrialDashboard } from "@/components/backtest";
 import { ParsedStrategy } from "@/services/pineScriptService";
-import { StrategyPackage } from "@/types/strategyPackage";
-import { ManagedIndicator } from "@/types/backtestTypes";
-import { Bot, BotConfig } from "@/types/botTypes";
+import { StrategyPackage, PackageStatus } from "@/types/strategyPackage";
+import { Bot } from "@/types/botTypes";
 import { BotApi } from "@/services/botApi";
 import { BotSelector } from "@/components/bot/BotSelector";
 
-import { VisualLogicCanvas } from "@/components/pipeline/VisualLogicCanvas";
 import { FlowIndicatorsPanel } from "@/components/pipeline/FlowIndicatorsPanel";
 import { StrategyPipeline } from "@/components/pipeline/StrategyPipeline";
 import { DashboardLayout } from "@/components/bot-studio/DashboardLayout";
 import { DashboardOverview } from "@/components/bot-studio/DashboardOverview";
-import { IndicatorSelectorPanel } from "@/components/indicator/IndicatorSelectorPanel";
-import { FlowEditor } from "@/components/flow/FlowEditor";
-import { InspectorPanel } from "@/components/pipeline/InspectorPanel";
-import { useBotStore } from "@/stores/botStore";
+import {
+    useBotStore,
+    useIndicatorPool,
+    useAvailableIndicators
+} from "@/stores/botStore";
 
 interface BotRule {
     id: number;
@@ -31,16 +30,6 @@ interface BotRule {
     isEnabled: boolean;
 }
 
-interface Indicator {
-    id: string;
-    type: string;
-    period: number;
-    source: string;
-}
-
-const indicators = ['RSI', 'MACD', 'EMA', 'SMA', 'Bollinger Bands', 'Price', 'Volume'];
-const actions = ['Buy', 'Sell', 'Close Position', 'Add to Position'];
-
 export default function BotStudio() {
     // -------------------------------------------------------------------------
     // 1. Core Dashboard State
@@ -48,7 +37,7 @@ export default function BotStudio() {
     const [activeView, setActiveView] = useState<'overview' | 'machine' | 'performance'>('overview');
 
     // Settings State (Lifted Up)
-    const [dashboardSettings, setDashboardSettings] = useState({
+    const [dashboardSettings] = useState({
         refreshRate: 5,
         theme: 'industrial',
         showFinancials: true,
@@ -67,19 +56,49 @@ export default function BotStudio() {
 
     // Multi-Bot State Management
     const [bots, setBots] = useState<Bot[]>([]);
-    const [activeBotId, setActiveBotId] = useState<string>('');
+    const [activeBotId, setActiveBotIdLocal] = useState<string>('');
 
     // Logic Builder State (Machine View)
     const [rules, setRules] = useState<BotRule[]>([]);
-    const [viewMode, setViewMode] = useState<'logic' | 'indicators'>('logic'); // Sub-view for Machine
-    const [activeIndicators, setActiveIndicators] = useState<Indicator[]>([]);
-    const [availableIndicators, setAvailableIndicators] = useState<any[]>([]); // Epic 2: Selector State
 
-    // Epic 3: Flow Store Actions
-    // const syncIndicatorsToFlow = useBotStore(state => state.syncIndicatorsToFlow); // Deprecated
-    const { syncIndicatorPool } = useBotStore();
+    // =========================================================================
+    // CENTRALIZED INDICATOR STATE (Single Source of Truth)
+    // =========================================================================
+    const indicatorPool = useIndicatorPool();
+    const availableIndicators = useAvailableIndicators();
 
-    const [strategyPackages, setStrategyPackages] = useState<StrategyPackage[]>([]);
+    const {
+        setActiveBotId: setStoreBotId,
+        fetchIndicators,
+        refreshIndicators,
+    } = useBotStore();
+
+    // Derived: activeIndicators from pool (for legacy compatibility)
+    const activeIndicators = indicatorPool.filter(i => i.isBound).map(i => ({
+        id: i.id,
+        type: i.type,
+        period: typeof i.params?.period === 'number' ? i.params.period : 14,
+        source: typeof i.params?.source === 'string' ? i.params.source : 'close'
+    }));
+
+    // Sync activeBotId to store when it changes
+    const setActiveBotId = useCallback((botId: string) => {
+        setActiveBotIdLocal(botId);
+        setStoreBotId(botId);
+    }, [setStoreBotId]);
+
+    // Strategy Packages - derived from availableIndicators for Performance view
+    const strategyPackages: StrategyPackage[] = availableIndicators.map(ind => ({
+        id: ind.id,
+        name: ind.name,
+        type: 'package' as const,
+        status: (ind.status || 'draft') as PackageStatus,
+        sourceScript: '',
+        params: ind.params,
+        subRules: [],
+        isEnabled: ind.isEnabled,
+    }));
+
     const [configurePackage, setConfigurePackage] = useState<StrategyPackage | null>(null);
     const [activeIndicatorId, setActiveIndicatorId] = useState<string | null>(null);
 
@@ -106,94 +125,8 @@ export default function BotStudio() {
     // 2. Data Fetching & Effect
     // -------------------------------------------------------------------------
 
-    // Fetch Bots on Mount
-    useEffect(() => {
-        const loadBots = async () => {
-            try {
-                const fetchedBots = await BotApi.getBots();
-                if (fetchedBots.length > 0) {
-                    setBots(fetchedBots);
-                    setActiveBotId(fetchedBots[0].id);
-                } else {
-                    const output = await handleCreateBot(true);
-                }
-            } catch (err) {
-                console.error("Failed to load bots:", err);
-            }
-        };
-        loadBots();
-    }, []);
-
-    // Derived Active Bot
-    const activeBot = bots.find(b => b.id === activeBotId) || (bots.length > 0 ? bots[0] : null);
-
-    // Fetch Data when Active Bot Changes
-    useEffect(() => {
-        if (!activeBotId) return;
-
-        const loadBotData = async () => {
-            try {
-                // Load Indicators (Strategy Packages)
-                const inds = await BotApi.getIndicators(activeBotId);
-
-                // Map to StrategyPackage
-                const mappedPackages = inds.map((i: any) => ({
-                    ...i,
-                    subRules: i.rules ? i.rules.map((r: any) => ({
-                        ...r,
-                        isEnabled: r.is_enabled
-                    })) : [],
-                    isEnabled: i.status !== 'disabled'
-                }));
-                setStrategyPackages(mappedPackages);
-
-                // Map to Simplified Active Indicators (for Logic Builder)
-                const activeInds = inds
-                    .filter((i: any) => i.status === 'active')
-                    .map((i: any) => ({
-                        id: i.id,
-                        type: i.type,
-                        period: i.period,
-                        source: i.source
-                    }));
-                setActiveIndicators(activeInds);
-
-                try {
-                    // Load Epic 2: Available Indicators (Selection View)
-                    const avail = await BotApi.getAvailableIndicators(activeBotId);
-                    setAvailableIndicators(avail);
-                    // Epic 3: Auto-inject on load
-                    syncIndicatorPool(avail);
-                } catch (e) { console.error("Failed to load available indicators", e); }
-
-                // Load Legacy Rules
-                const fetchedRules = await BotApi.getBotRules(activeBotId);
-                if (fetchedRules.length > 0) {
-                    const mappedRules = fetchedRules.map((r: any) => ({
-                        id: r.id,
-                        indicator: r.indicator_id,
-                        operator: r.operator,
-                        value: r.value,
-                        action: r.action,
-                        isEnabled: r.is_enabled
-                    }));
-                    setRules(mappedRules);
-                } else {
-                    setRules([]);
-                }
-
-            } catch (err) {
-                console.error("Failed to load bot data:", err);
-            }
-        };
-        loadBotData();
-    }, [activeBotId]);
-
-    // -------------------------------------------------------------------------
-    // 3. Handlers (Logic & Config)
-    // -------------------------------------------------------------------------
-
-    const handleCreateBot = async (isInit = false) => {
+    // Create Bot Handler (defined before useEffect that uses it)
+    const handleCreateBot = useCallback(async () => {
         const newBotPayload: Bot = {
             id: `bot_${Date.now()}`,
             name: 'New Trading Bot',
@@ -212,41 +145,69 @@ export default function BotStudio() {
             setBots(prev => [...prev, createdBot]);
             setActiveBotId(createdBot.id);
             return createdBot;
-        } catch (err) { console.error(err); }
-    };
+        } catch (err) {
+            console.error(err);
+        }
+    }, [setActiveBotId]);
 
-    const updateActiveBotConfig = async (key: keyof BotConfig, value: any) => {
-        if (!activeBot) return;
-        const updatedBot = { ...activeBot, configuration: { ...activeBot.configuration, [key]: value } };
-        setBots(prev => prev.map(b => b.id === activeBotId ? updatedBot : b));
-        try {
-            await BotApi.updateBotConfig(activeBotId, updatedBot.configuration);
-        } catch (err) { console.error(err); }
-    };
-
-    // Configuration Updaters (Personality, Risk, etc.)
-    const setPersonality = (val: string) => updateActiveBotConfig('personality', val);
-    const setRiskPerTrade = (val: number) => updateActiveBotConfig('riskPerTrade', val);
-    const setMaxDailyTrades = (val: number) => updateActiveBotConfig('maxDailyTrades', val);
-    const setStopOnLoss = (val: number) => updateActiveBotConfig('stopOnLoss', val);
-    const setTimeframe = (val: string) => updateActiveBotConfig('timeframe', val);
-
-    // Rule Handlers
-    const addRule = () => {
-        const newRule: BotRule = {
-            id: Date.now(),
-            indicator: activeIndicators.length > 0 ? activeIndicators[0].id : '',
-            operator: 'signal',
-            value: 0,
-            action: 'Buy',
-            isEnabled: true,
+    // Fetch Bots on Mount
+    useEffect(() => {
+        const loadBots = async () => {
+            try {
+                const fetchedBots = await BotApi.getBots();
+                if (fetchedBots.length > 0) {
+                    setBots(fetchedBots);
+                    setActiveBotId(fetchedBots[0].id);
+                } else {
+                    await handleCreateBot();
+                }
+            } catch (err) {
+                console.error("Failed to load bots:", err);
+            }
         };
-        setRules([...rules, newRule]);
-    };
-    const removeRule = (id: number) => setRules(rules.filter(r => r.id !== id));
-    const updateRule = (id: number, field: keyof BotRule, value: any) => {
-        setRules(rules.map(r => r.id === id ? { ...r, [field]: value } : r));
-    };
+        loadBots();
+    }, [handleCreateBot, setActiveBotId]);
+
+    // Derived Active Bot
+    const activeBot = bots.find(b => b.id === activeBotId) || (bots.length > 0 ? bots[0] : null);
+
+    // Fetch Data when Active Bot Changes
+    useEffect(() => {
+        if (!activeBotId) return;
+
+        const loadBotData = async () => {
+            try {
+                // =========================================================
+                // CENTRALIZED: Fetch indicators via store (syncs both views)
+                // =========================================================
+                await fetchIndicators(activeBotId);
+
+                // Load Legacy Rules
+                const fetchedRules = await BotApi.getBotRules(activeBotId);
+                if (fetchedRules.length > 0) {
+                    const mappedRules = fetchedRules.map((r: { id: number; indicator_id: string; operator: string; value: number; action: string; is_enabled: boolean }) => ({
+                        id: r.id,
+                        indicator: r.indicator_id,
+                        operator: r.operator,
+                        value: r.value,
+                        action: r.action,
+                        isEnabled: r.is_enabled
+                    }));
+                    setRules(mappedRules);
+                } else {
+                    setRules([]);
+                }
+
+            } catch (err) {
+                console.error("Failed to load bot data:", err);
+            }
+        };
+        loadBotData();
+    }, [activeBotId, fetchIndicators]);
+
+    // -------------------------------------------------------------------------
+    // 3. Handlers (Logic & Config)
+    // -------------------------------------------------------------------------
 
     // Strategy Import & Toggle
     const handleStrategyImport = async (strategy: ParsedStrategy) => {
@@ -261,57 +222,23 @@ export default function BotStudio() {
                     source: strategy.package.sourceScript || 'manual', // Map sourceScript -> source
                     period: '14', // Default period (backend required string)
                     params: {}, // Default params
-                    type: 'pine_script' // Enforce type
+                    type: 'pine_script'
                 };
                 await BotApi.createIndicator(pkgToCreate);
-                // Refresh
-                const inds = await BotApi.getIndicators(activeBotId);
-                setStrategyPackages(inds);
+                // Refresh indicators via store
+                await refreshIndicators();
                 // Auto switch to performance view to manage it
                 setActiveView('performance');
-                setActiveIndicatorId(pkgToCreate.id); // Auto-select the new indicator
-            } catch (err: any) {
+                setActiveIndicatorId(pkgToCreate.id as string); // Auto-select the new indicator
+            } catch (err) {
                 console.error("Strategy Import Failed:", err);
-                alert(`Failed to import strategy: ${err.message || 'Unknown error'}. Please try again.`);
+                const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+                alert(`Failed to import strategy: ${errorMessage}. Please try again.`);
             }
         } else {
-            // Legacy handling
-            setViewMode('logic');
+            // Legacy handling - no action needed
         }
     };
-
-    const handlePackageToggle = async (packageId: string, enabled: boolean) => {
-        // Find the package first to check status
-        const pkg = strategyPackages.find(p => p.id === packageId);
-        if (!pkg) return;
-
-        // Auto-activate if Draft
-        if (enabled && pkg.status === 'draft') {
-            try {
-                await BotApi.updateIndicatorStatus(packageId, 'active');
-                // Optimistic update will happen below
-            } catch (err) {
-                console.error("Failed to activate indicator:", err);
-                alert("Failed to activate indicator. Please try again.");
-                return;
-            }
-        } else if (enabled && pkg.status !== 'active' && pkg.status !== 'partial') {
-            console.error('Cannot enable non-active package');
-            return;
-        }
-
-        setStrategyPackages(prev => prev.map(p => {
-            if (p.id !== packageId) return p;
-
-            // If we just activated it, update status too
-            const newStatus = (enabled && p.status === 'draft') ? 'active' : p.status;
-
-            const updatedSubRules = p.subRules.map(r => ({ ...r, isEnabled: enabled }));
-            return { ...p, status: newStatus, subRules: updatedSubRules, isEnabled: enabled };
-        }));
-    };
-
-    const visiblePackages = strategyPackages.filter(pkg => pkg.status === 'active' || pkg.status === 'draft');
 
     const handleSaveConfiguration = async () => {
         if (!activeBotId || !activeBot) return;
@@ -326,57 +253,13 @@ export default function BotStudio() {
             await BotApi.replaceBotRules(activeBotId, rulesPayload);
             await BotApi.updateBotConfig(activeBotId, activeBot.configuration);
             alert("Configuration saved successfully!");
-        } catch (err: any) {
-            alert("Failed to save: " + err.message);
-        }
-    };
-
-    // Epic 2: Binding Handlers
-    const handleBindIndicator = async (indicatorId: string) => {
-        // Optimistic Update
-        const updatedIndicators = availableIndicators.map(ind =>
-            ind.indicator_id === indicatorId ? { ...ind, is_bound: true, is_enabled: true } : ind
-        );
-        setAvailableIndicators(updatedIndicators);
-        // Epic 3: Sync to Flow
-        syncIndicatorPool(updatedIndicators);
-
-        try {
-            await BotApi.bindIndicator(activeBotId, indicatorId);
         } catch (err) {
-            console.error(err);
-            // Revert on failure
-            const reverted = availableIndicators.map(ind =>
-                ind.indicator_id === indicatorId ? { ...ind, is_bound: false } : ind
-            );
-            setAvailableIndicators(reverted);
-            syncIndicatorPool(reverted); // Revert Flow
-            alert("Failed to bind indicator");
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            alert("Failed to save: " + message);
         }
     };
 
-    const handleUnbindIndicator = async (indicatorId: string) => {
-        // Optimistic Update
-        const updatedIndicators = availableIndicators.map(ind =>
-            ind.indicator_id === indicatorId ? { ...ind, is_bound: false } : ind
-        );
-        setAvailableIndicators(updatedIndicators);
-        // Epic 3: Sync to Flow
-        syncIndicatorPool(updatedIndicators);
 
-        try {
-            await BotApi.unbindIndicator(activeBotId, indicatorId);
-        } catch (err) {
-            console.error(err);
-            // Revert on failure
-            const reverted = availableIndicators.map(ind =>
-                ind.indicator_id === indicatorId ? { ...ind, is_bound: true } : ind
-            );
-            setAvailableIndicators(reverted);
-            syncIndicatorPool(reverted); // Revert Flow
-            alert("Failed to unbind indicator");
-        }
-    };
 
     // -------------------------------------------------------------------------
     // 4. Render
@@ -389,8 +272,8 @@ export default function BotStudio() {
                 <div className="h-full animate-in fade-in duration-300">
                     <DashboardOverview
                         activeBotName={activeBot?.name}
-                        botStatus={activeBot?.status as any}
-                        winRate={68} // TODO: Connect to real backtest result
+                        botStatus={activeBot?.status as 'running' | 'stopped' | 'draft' | undefined}
+                        winRate={68}
                         netProfit={activeBot ? 12450 : 0}
                         totalTrades={activeBot ? 142 : 0}
                         activeIndicators={activeIndicators}
@@ -415,7 +298,7 @@ export default function BotStudio() {
                                     onCreate={handleCreateBot}
                                 />
                             </div>
-                            <div className="flex-shrink-0">
+                            <div className="shrink-0">
                                 <button
                                     onClick={handleSaveConfiguration}
                                     disabled={activeBot?.status === 'running'}
@@ -449,9 +332,9 @@ export default function BotStudio() {
                             isOpen={!!configurePackage}
                             package_={configurePackage}
                             onClose={() => setConfigurePackage(null)}
-                            onSave={(updated) => {
-                                // Simple update
-                                setStrategyPackages(prev => prev.map(p => p.id === updated.id ? updated : p));
+                            onSave={() => {
+                                // Refresh indicators after save
+                                refreshIndicators();
                             }}
                         />
                     )}
