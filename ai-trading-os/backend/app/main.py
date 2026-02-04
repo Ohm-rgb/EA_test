@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import engine, Base
 from app.api import bots, indicators, rules 
-from app.api.v1 import auth, trades, portfolio, settings as settings_api, chat, health, audit, integrity # Added integrity
+from app.api.v1 import auth, trades, portfolio, settings as settings_api, chat, health, audit, integrity, journal, ea_control  # Added ea_control
 
 
 
@@ -95,6 +95,8 @@ app.include_router(chat.router, prefix="/api/v1/chat", tags=["AI Chat"])
 app.include_router(audit.router, prefix="/api/v1", tags=["Audit"])
 app.include_router(integrity.router, prefix="/api/v1/integrity", tags=["Integrity Lab"]) # Added Router
 app.include_router(health.router, prefix="/api/v1/health", tags=["System Health"])
+app.include_router(journal.router, prefix="/api/v1/bots", tags=["Trading Journal"])
+app.include_router(ea_control.router, prefix="/api/v1/bots", tags=["EA Control"])
 
 
 @app.get("/")

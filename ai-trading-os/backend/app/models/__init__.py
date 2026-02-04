@@ -20,6 +20,13 @@ from app.models.bot import (
     BotIndicator,
 )
 
+from app.models.trading_journal import (
+    TradingJournal,
+    DailyTarget,
+    AIRecommendation,
+    JournalEntryType,
+)
+
 __all__ = [
     "User",
     "Settings",
@@ -31,4 +38,9 @@ __all__ = [
     "AuditLog",
     "AISession",
     "AIMessage",
+    "TradingJournal",
+    "DailyTarget",
+    "AIRecommendation",
+    "JournalEntryType",
 ]
+
