@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 from app.core import get_db, get_current_user
+from app.core.security import UserContext
 from app.services.ea_controller import EAController, EAStatus
 from app.services.ai_strategy_planner import AIStrategyPlanner
 
@@ -41,14 +42,14 @@ async def start_trading(
     bot_id: str,
     request: StartTradingRequest = StartTradingRequest(),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: UserContext = Depends(get_current_user)
 ):
     """เริ่มเทรด"""
     controller = EAController(db)
     
     state = controller.start_trading(
         bot_id=bot_id,
-        user_id=current_user.get("user_id", 1),
+        user_id=current_user.id,
         daily_target=request.daily_target
     )
     
@@ -68,14 +69,14 @@ async def stop_trading(
     bot_id: str,
     reason: str = "manual",
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: UserContext = Depends(get_current_user)
 ):
     """หยุดเทรด"""
     controller = EAController(db)
     
     state = controller.stop_trading(
         bot_id=bot_id,
-        user_id=current_user.get("user_id", 1),
+        user_id=current_user.id,
         reason=reason
     )
     
@@ -94,14 +95,14 @@ async def stop_trading(
 async def pause_trading(
     bot_id: str,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: UserContext = Depends(get_current_user)
 ):
     """พักการเทรดชั่วคราว"""
     controller = EAController(db)
     
     state = controller.pause_trading(
         bot_id=bot_id,
-        user_id=current_user.get("user_id", 1)
+        user_id=current_user.id
     )
     
     return EAStatusResponse(
@@ -119,14 +120,14 @@ async def pause_trading(
 async def get_ea_status(
     bot_id: str,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: UserContext = Depends(get_current_user)
 ):
     """ดึงสถานะ EA"""
     controller = EAController(db)
     
     state = controller.get_status(
         bot_id=bot_id,
-        user_id=current_user.get("user_id", 1)
+        user_id=current_user.id
     )
     
     return EAStatusResponse(
@@ -144,14 +145,14 @@ async def get_ea_status(
 async def check_daily_target(
     bot_id: str,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: UserContext = Depends(get_current_user)
 ):
     """ตรวจสอบเป้าหมายประจำวัน (และ auto-stop ถ้าถึง)"""
     controller = EAController(db)
     
     result = controller.check_daily_target(
         bot_id=bot_id,
-        user_id=current_user.get("user_id", 1)
+        user_id=current_user.id
     )
     
     return result
@@ -162,14 +163,14 @@ async def set_daily_target(
     bot_id: str,
     request: SetTargetRequest,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: UserContext = Depends(get_current_user)
 ):
     """ตั้งเป้าหมายประจำวัน"""
     controller = EAController(db)
     
     result = controller.set_daily_target(
         bot_id=bot_id,
-        user_id=current_user.get("user_id", 1),
+        user_id=current_user.id,
         target_usd=request.target_usd
     )
     
@@ -180,14 +181,14 @@ async def set_daily_target(
 async def close_all_positions(
     bot_id: str,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: UserContext = Depends(get_current_user)
 ):
     """ปิดทุก Position"""
     controller = EAController(db)
     
     result = controller.close_all_positions(
         bot_id=bot_id,
-        user_id=current_user.get("user_id", 1)
+        user_id=current_user.id
     )
     
     return result
@@ -203,14 +204,14 @@ async def generate_trading_plan(
     symbol: str = "XAUUSD",
     daily_target: float = 100,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: UserContext = Depends(get_current_user)
 ):
     """AI สร้างแผนเทรดอัตโนมัติ"""
     planner = AIStrategyPlanner(db)
     
     plan = planner.generate_trading_plan(
         bot_id=bot_id,
-        user_id=current_user.get("user_id", 1),
+        user_id=current_user.id,
         symbol=symbol,
         daily_target=daily_target
     )
@@ -241,7 +242,7 @@ async def analyze_market(
     symbol: str = "XAUUSD",
     timeframe: str = "H1",
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: UserContext = Depends(get_current_user)
 ):
     """AI วิเคราะห์สภาพตลาด"""
     planner = AIStrategyPlanner(db)

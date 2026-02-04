@@ -22,11 +22,21 @@ DEFAULT_LOCAL_MODEL = "qwen3:8b"
 
 # ============================================
 # ALLOWED EXTERNAL AI MODELS
+# Official Model Names from Google API (2026)
+# See: https://ai.google.dev/gemini-api/docs/models
 # ============================================
 ALLOWED_GEMINI_MODELS: Set[str] = {
+    # Gemini 3 series (latest - requires -preview suffix)
+    "gemini-3-pro-preview",
+    "gemini-3-flash-preview",
+    # Gemini 2.5 series (stable)
+    "gemini-2.5-pro",
     "gemini-2.5-flash",
     "gemini-2.5-flash-lite",
-    "gemini-3-flash",
+    # Gemini 2.0 series (deprecating March 31, 2026)
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-exp",
+    "gemini-2.0-flash-lite",
 }
 
 ALLOWED_OPENAI_MODELS: Set[str] = {

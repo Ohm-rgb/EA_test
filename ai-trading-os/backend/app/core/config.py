@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     
     # AI - Gemini (External)
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-1.5-flash"
+    GEMINI_MODEL: str = "gemini-2.5-flash"
     
     # Redis
     REDIS_URL: str = "redis://localhost:6379"
