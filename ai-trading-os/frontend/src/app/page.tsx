@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Pause, Square, RotateCcw, XCircle } from 'lucide-react';
-import api, { PortfolioOverview, ExposureInfo } from '@/lib/api';
+import api, { PortfolioOverview, ExposureInfo, TradeResponse, MT5Position } from '@/lib/api';
 import AIControlPanel from '@/components/dashboard/AIControlPanel';
 
 // Portfolio Metrics Component - Real-time from MT5
@@ -48,17 +48,24 @@ function PortfolioMetrics() {
   );
 }
 
-// Recent Trades Table
+// Recent Trades Table (Real Data)
 function RecentTrades() {
-  const trades = [
-    { time: '14:30', type: 'BUY', entry: 239.50, exit: 239.50, pl: 0.30 },
-    { time: '14:30', type: 'BUY', entry: 239.25, exit: 239.75, pl: 0.40 },
-    { time: '14:30', type: 'SELL', entry: 238.60, exit: 238.60, pl: -0.20 },
-    { time: '14:30', type: 'BUY', entry: 239.50, exit: 239.50, pl: 1.50 },
-    { time: '14:30', type: 'SELL', entry: 239.00, exit: 239.00, pl: 1.40 },
-    { time: '14:30', type: 'BUY', entry: 239.20, exit: 239.20, pl: 1.25 },
-    { time: '14:30', type: 'BUY', entry: 233.65, exit: 233.65, pl: -0.10 },
-  ];
+  const [trades, setTrades] = useState<TradeResponse[]>([]);
+
+  useEffect(() => {
+    const fetchTrades = async () => {
+      try {
+        const data = await api.getTrades(7);
+        setTrades(data);
+      } catch (e) {
+        console.error('Failed to fetch trades', e);
+      }
+    };
+
+    fetchTrades();
+    const interval = setInterval(fetchTrades, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="trades-section">
@@ -74,17 +81,21 @@ function RecentTrades() {
           </tr>
         </thead>
         <tbody>
-          {trades.map((trade, i) => (
-            <tr key={i}>
-              <td>{trade.time}</td>
-              <td className={trade.type === 'BUY' ? 'text-[var(--color-info)]' : 'text-[var(--color-critical)]'}>{trade.type}</td>
-              <td>{trade.entry.toFixed(2)}</td>
-              <td>{trade.exit.toFixed(2)}</td>
-              <td className={trade.pl >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-critical)]'}>
-                {trade.pl >= 0 ? '+' : ''}{trade.pl.toFixed(2)}
-              </td>
-            </tr>
-          ))}
+          {trades && trades.length > 0 ? (
+            trades.map((trade, i) => (
+              <tr key={i}>
+                <td>{new Date(trade.opened_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}</td>
+                <td className={trade.trade_type.toUpperCase() === 'BUY' ? 'text-[var(--color-info)]' : 'text-[var(--color-critical)]'}>{trade.trade_type.toUpperCase()}</td>
+                <td>{trade.open_price.toFixed(2)}</td>
+                <td>{trade.close_price ? trade.close_price.toFixed(2) : '-'}</td>
+                <td className={(trade.profit ?? 0) >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-critical)]'}>
+                  {(trade.profit ?? 0) >= 0 ? '+' : ''}{(trade.profit ?? 0).toFixed(2)}
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr><td colSpan={5} className="text-center text-gray-500 py-4">No recent trades</td></tr>
+          )}
         </tbody>
       </table>
     </div>
@@ -139,17 +150,24 @@ function ChartArea() {
   );
 }
 
-// Active Orders Component
+// Active Orders Component (Real Data from MT5)
 function ActiveOrders() {
-  const orders = [
-    { type: 'BUY', entry: 1467.55, pl: 1240 },
-    { type: 'BUY', entry: 1467.73, pl: 1240 },
-    { type: 'BUY', entry: 1467.73, pl: 1240 },
-    { type: 'BUY', entry: 1461.80, pl: 1240 },
-    { type: 'BUY', entry: 1467.39, pl: 1240 },
-    { type: 'BUY', entry: 1467.79, pl: -650 },
-    { type: 'BUY', entry: 1461.89, pl: 1240 },
-  ];
+  const [orders, setOrders] = useState<MT5Position[]>([]);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const response = await api.getMT5Positions();
+        setOrders(response.positions || []);
+      } catch (e) {
+        console.error('Failed to fetch active orders', e);
+      }
+    };
+
+    fetchOrders();
+    const interval = setInterval(fetchOrders, 3000); // Fast refresh for active orders
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="orders-section">
@@ -163,15 +181,21 @@ function ActiveOrders() {
           </tr>
         </thead>
         <tbody>
-          {orders.map((order, i) => (
-            <tr key={i}>
-              <td className="text-[var(--color-info)]">{order.type}</td>
-              <td>{order.entry.toFixed(2)}</td>
-              <td className={order.pl >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-critical)]'}>
-                {order.pl >= 0 ? '+' : ''}${Math.abs(order.pl).toLocaleString()}
-              </td>
-            </tr>
-          ))}
+          {orders && orders.length > 0 ? (
+            orders.map((order, i) => (
+              <tr key={i}>
+                <td className={order.type === 'buy' ? 'text-[var(--color-info)]' : 'text-[var(--color-critical)]'}>
+                  {order.type.toUpperCase()}
+                </td>
+                <td>{order.price_open.toFixed(2)}</td>
+                <td className={order.profit >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-critical)]'}>
+                  {order.profit >= 0 ? '+' : ''}${Math.abs(order.profit).toLocaleString()}
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr><td colSpan={3} className="text-center text-gray-500 py-4">No active orders</td></tr>
+          )}
         </tbody>
       </table>
     </div>

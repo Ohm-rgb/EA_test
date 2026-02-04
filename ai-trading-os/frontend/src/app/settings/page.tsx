@@ -33,20 +33,53 @@ export default function Settings() {
     const [savedMT5Accounts, setSavedMT5Accounts] = useState<SavedMT5Account[]>([]);
     const [selectedAccountId, setSelectedAccountId] = useState<string>('');
 
-    // Load saved accounts from localStorage
+    // Load saved accounts and default from localStorage
     useEffect(() => {
         const saved = localStorage.getItem('mt5_accounts');
+        const defaultId = localStorage.getItem('mt5_default_account');
+
         if (saved) {
             try {
-                setSavedMT5Accounts(JSON.parse(saved));
+                const accounts: SavedMT5Account[] = JSON.parse(saved);
+                setSavedMT5Accounts(accounts);
+
+                let activeAccount: SavedMT5Account | undefined;
+
+                // 1. Try to load default account
+                if (defaultId) {
+                    activeAccount = accounts.find(a => a.id === defaultId);
+                }
+
+                // 2. Fallback to first account if default not found
+                if (!activeAccount && accounts.length > 0) {
+                    activeAccount = accounts[0];
+                    localStorage.setItem('mt5_default_account', activeAccount.id);
+                }
+
+                // 3. Set state and sync to backend
+                if (activeAccount) {
+                    setSelectedAccountId(activeAccount.id);
+                    setMt5Server(activeAccount.server);
+                    setMt5Login(activeAccount.login);
+                    setMt5Password(activeAccount.password);
+
+                    // Auto-sync to backend to ensure credentials exist for auto-connect
+                    console.log('Auto-syncing MT5 credentials to backend...');
+                    api.updateSettings({
+                        mt5_server: activeAccount.server,
+                        mt5_login: activeAccount.login,
+                        mt5_password: activeAccount.password
+                    }).then(() => console.log('Auto-sync successful'))
+                        .catch(e => console.warn('Auto-sync failed:', e));
+                }
             } catch (e) {
                 console.error('Failed to parse saved MT5 accounts', e);
             }
         }
     }, []);
 
-    // Save account to localStorage
-    const handleSaveMT5Account = () => {
+    // Save account to localStorage and set as default
+    const handleSaveMT5Account = async () => {
         if (!mt5Server || !mt5Login || !mt5Password) {
             setMessage({ type: 'error', text: 'กรุณากรอกข้อมูลให้ครบถ้วน' });
             return;
@@ -66,8 +99,23 @@ export default function Settings() {
         const updated = [...savedMT5Accounts, newAccount];
         setSavedMT5Accounts(updated);
         localStorage.setItem('mt5_accounts', JSON.stringify(updated));
+
+        // Set as default
         setSelectedAccountId(newAccount.id);
-        setMessage({ type: 'success', text: `บันทึก "${accountName}" สำเร็จ` });
+        localStorage.setItem('mt5_default_account', newAccount.id);
+
+        // Sync to Backend
+        try {
+            await api.updateSettings({
+                mt5_server: mt5Server,
+                mt5_login: mt5Login,
+                mt5_password: mt5Password
+            });
+            setMessage({ type: 'success', text: `บันทึก "${accountName}" เป็นค่าเริ่มต้นและ Sync ไปยัง Server แล้ว` });
+        } catch (e) {
+            console.error('Failed to sync to backend', e);
+            setMessage({ type: 'error', text: `บันทึก Local แล้ว แต่ Sync Server ไม่สำเร็จ` });
+        }
     };
 
     // Delete saved account
@@ -80,17 +128,29 @@ export default function Settings() {
         const updated = savedMT5Accounts.filter(a => a.id !== accountId);
         setSavedMT5Accounts(updated);
         localStorage.setItem('mt5_accounts', JSON.stringify(updated));
+
+        // Clear default if deleted account was default
         if (selectedAccountId === accountId) {
             setSelectedAccountId('');
             setMt5Server('');
             setMt5Login('');
             setMt5Password('');
+            localStorage.removeItem('mt5_default_account');
         }
         setMessage({ type: 'success', text: `ลบบัญชี "${account.name}" แล้ว` });
     };
 
-    // Select saved account
-    const handleSelectMT5Account = (accountId: string) => {
+    // Select saved account and set as default
+    const handleSelectMT5Account = async (accountId: string) => {
+        if (!accountId) {
+            setSelectedAccountId('');
+            setMt5Server('');
+            setMt5Login('');
+            setMt5Password('');
+            localStorage.removeItem('mt5_default_account');
+            return;
+        }
+
         const account = savedMT5Accounts.find(a => a.id === accountId);
         if (account) {
             setSelectedAccountId(accountId);
@@ -99,11 +159,29 @@ export default function Settings() {
             setMt5Password(account.password);
             setMt5Status('idle');
             setMt5AccountInfo(null);
+
+            // Save as default
+            localStorage.setItem('mt5_default_account', accountId);
+
+            // Sync to Backend
+            try {
+                await api.updateSettings({
+                    mt5_server: account.server,
+                    mt5_login: account.login,
+                    mt5_password: account.password
+                });
+                setMessage({ type: 'success', text: `เปลี่ยนบัญชีเป็น "${account.name}" และ Sync เรียบร้อย` });
+            } catch (e) {
+                console.error('Failed to sync to backend', e);
+                setMessage({ type: 'error', text: `เปลี่ยน Local แล้ว แต่ Sync Server ไม่สำเร็จ` });
+            }
         } else {
+            // Case where ID is passed but not found (shouldn't happen with dropdown)
             setSelectedAccountId('');
             setMt5Server('');
             setMt5Login('');
             setMt5Password('');
+            localStorage.removeItem('mt5_default_account');
         }
     };
 

@@ -77,6 +77,10 @@ class SettingsUpdate(BaseModel):
     gemini_api_key: Optional[str] = None
     openai_api_key: Optional[str] = None
     monthly_token_limit: Optional[int] = None
+    # MT5 Settings
+    mt5_server: Optional[str] = None
+    mt5_login: Optional[str] = None
+    mt5_password: Optional[str] = None  # Frontend sends 'mt5_password', backend stores in 'mt5_password_encrypted'
 
     @field_validator('gemini_api_key')
     @classmethod
@@ -189,7 +193,16 @@ async def update_settings(
     if not settings:
         raise HTTPException(status_code=404, detail="Settings not found")
     
-    for key, value in data.model_dump(exclude_unset=True).items():
+    updates = data.model_dump(exclude_unset=True)
+    
+    # Handle MT5 password specially (map to encrypted field)
+    # Note: For now we're storing plain text as requested by user context, 
+    # but in prod this should be encrypted.
+    if "mt5_password" in updates:
+        settings.mt5_password_encrypted = updates.pop("mt5_password")
+    
+    # Apply updates
+    for key, value in updates.items():
         setattr(settings, key, value)
     
     db.commit()

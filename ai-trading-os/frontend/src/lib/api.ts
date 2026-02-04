@@ -171,6 +171,10 @@ class ApiClient {
         return this.request<MT5StatusResponse>('/api/v1/settings/mt5/status');
     }
 
+    async getMT5Positions() {
+        return this.request<MT5PositionsResponse>('/api/v1/portfolio/positions');
+    }
+
     // ============================================
     // EA Control API - Master Bot Alpha
     // ============================================
@@ -234,6 +238,42 @@ class ApiClient {
 export interface TestAIResponse {
     ollama: { status: string; message: string };
     gemini: { status: string; message: string };
+}
+
+export interface TradeResponse {
+    id: number;
+    ticket_number: string | null;
+    symbol: string;
+    trade_type: string;
+    lot_size: number;
+    open_price: number;
+    close_price: number | null;
+    stop_loss: number | null;
+    take_profit: number | null;
+    profit: number | null;
+    status: string;
+    opened_at: string;
+    closed_at: string | null;
+}
+
+export interface MT5Position {
+    ticket: number;
+    symbol: string;
+    type: string;
+    volume: number;
+    price_open: number;
+    price_current: number;
+    profit: number;
+    sl: number;
+    tp: number;
+    time: number;
+    comment: string;
+}
+
+export interface MT5PositionsResponse {
+    connected: boolean;
+    positions: MT5Position[];
+    total_positions: number;
 }
 
 export interface MT5AccountInfo {
@@ -380,6 +420,8 @@ export interface Settings {
     // MT5
     mt5_server: string | null;
     mt5_account_type: string;
+    mt5_login?: string | null;  // Optional, not always returned
+    mt5_password?: string | null; // Optional, input only
 }
 
 export interface AISettings {

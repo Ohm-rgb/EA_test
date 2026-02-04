@@ -54,6 +54,32 @@ async def lifespan(app: FastAPI):
             db.add(default_settings)
             db.commit()
             print("[OK] Created default settings")
+            
+        # Try to auto-connect to MT5 if credentials exist
+        try:
+            settings_record = db.query(Settings).first()
+            if settings_record and settings_record.mt5_server and settings_record.mt5_login and settings_record.mt5_password_encrypted:
+                from app.services.mt5_service import mt5_service
+                print(f"[STARTUP] Found saved MT5 credentials for account {settings_record.mt5_login}. Connecting...")
+                
+                # Note: In a real scenario, decrypt password here
+                # For now using stored plain text (as requested/implemented without encryption yet)
+                result = mt5_service.connect(
+                    server=settings_record.mt5_server,
+                    login=int(settings_record.mt5_login),
+                    password=settings_record.mt5_password_encrypted
+                )
+                
+                if result.status == "connected":
+                    print(f"[STARTUP] ✅ Auto-connected to MT5: {result.message}")
+                else:
+                    print(f"[STARTUP] ⚠️ Auto-connect failed: {result.message}")
+            else:
+                print(f"[STARTUP] No saved MT5 credentials found. Skipping auto-connect.")
+                
+        except Exception as e:
+            print(f"[STARTUP] Error during MT5 auto-connect: {e}")
+
     finally:
         db.close()
     

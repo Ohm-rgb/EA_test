@@ -103,6 +103,13 @@ class MT5Service:
         except Exception as e:
             logger.error(f"MT5 shutdown error: {e}")
     
+    def connect(self, server: str, login: int, password: str) -> MT5ConnectionResult:
+        """
+        Establish persistent connection to MT5.
+        Alias for test_connection but semantically implies persistent usage.
+        """
+        return self.test_connection(server, login, password)
+
     def test_connection(
         self,
         server: str,
