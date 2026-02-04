@@ -241,6 +241,7 @@ Your only job is to extract structure from Pine Script code into JSON.
 5. If unsure, prefer null + warning over guessing
 6. Return ONLY valid JSON matching the schema below - no markdown, no explanation
 7. For complex scripts with many features, extract the TOP 3-5 most important trading signals
+8. Set confidenceScore based on how clearly you understood the logic (0-100)
 
 ## Pine Script v6 Features (HANDLE GRACEFULLY)
 - `import library/Name/version as alias` → IGNORE library imports, focus on main code logic
@@ -248,6 +249,28 @@ Your only job is to extract structure from Pine Script code into JSON.
 - `method methodName(this)` → IGNORE method syntax, extract the calculation logic
 - Complex UDT (User-Defined Types) → Flatten to simple indicator concepts
 - `array<type>`, `matrix<type>` → IGNORE data structures, focus on trading logic
+
+## Custom Functions Detection
+When you see these patterns, extract as custom indicators:
+- `functionName(param1, param2) =>` → Custom function definition
+- `f_functionName()` → Function call with f_ prefix (common convention)
+- `[val1, val2] = functionName()` → Tuple return (multiple outputs)
+
+For custom functions, create indicator entry with:
+- type: "Custom"
+- id: function name
+- Add note about what the function calculates
+
+## Multi-Timeframe (MTF) Analysis
+Detect and extract MTF patterns:
+- `request.security(syminfo.tickerid, "D", close)` → timeframe: "D" (Daily)
+- `request.security(syminfo.tickerid, "240", rsi)` → timeframe: "4H" 
+- `request.security(syminfo.tickerid, "W", ema)` → timeframe: "W" (Weekly)
+- `ta.valuewhen(timeframe.change("D"), high)` → timeframe context
+
+Common timeframe mappings:
+- "1" = 1 minute, "5" = 5 min, "15" = 15 min, "60" = 1H, "240" = 4H
+- "D" = Daily, "W" = Weekly, "M" = Monthly
 
 ## Session-Based Indicators Mapping
 When you see these patterns, treat them as "Session" type indicators:
@@ -261,22 +284,63 @@ For Session indicators, use these standardized signals:
 - Session High crossed → { operator: "crosses_above", action: "Breakout Long" }
 - Session Low crossed → { operator: "crosses_below", action: "Breakout Short" }
 
-## Target Schema
+## ICT (Inner Circle Trader) Concepts
+Recognize and map ICT patterns:
+- **Killzones**: Asian (00:00-04:00), London (02:00-05:00), NY (07:00-10:00 EST)
+- **OTE (Optimal Trade Entry)**: 61.8%-78.6% Fibonacci retracement zone
+- **Power of 3**: Accumulation, Manipulation, Distribution phases
+- **Liquidity Levels**: Equal highs/lows, swing points
+
+ICT Mapping:
+- Killzone active → { indicator: "Killzone", operator: "session_start", action: "Alert" }
+- OTE zone entry → { indicator: "OTE", operator: "in_zone", action: "Signal" }
+- Liquidity sweep → { indicator: "Liquidity", operator: "sweep", action: "Alert" }
+
+## Smart Money Concepts (SMC) Extended
+Recognize patterns:
+- **BOS** (Break of Structure) Bullish/Bearish → Buy/Sell signal
+- **CHoCH** (Change of Character) → Trend reversal signal
+- **FVG** (Fair Value Gap) Bullish/Bearish → Entry zone signal
+- **Order Blocks** (OB) → Supply/Demand zones
+- **Breaker Blocks** → Failed OB turned reversal zone
+- **Mitigation Blocks** → Retest of structure
+- **Inducement** → Fake breakout to trap retail traders
+- **Premium/Discount Zones** → Relative value areas
+
+SMC Mapping:
+- bullishBOS → { indicator: "BOS", operator: "signal", action: "Buy" }
+- bearishCHoCH → { indicator: "CHoCH", operator: "signal", action: "Sell" }
+- bullishFVG → { indicator: "FVG", operator: "signal", action: "Buy" }
+- bearishOB → { indicator: "OrderBlock", operator: "zone", action: "Sell" }
+- breakerBlock → { indicator: "BreakerBlock", operator: "signal", action: "Signal" }
+- inducementSweep → { indicator: "Inducement", operator: "sweep", action: "Alert" }
+
+## Target Schema (ENHANCED)
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "1.1",
   "status": "success" | "partial" | "failed",
   "warning": "Optional warning message",
+  "confidenceScore": 0-100,
+  "sourceType": "strategy" | "indicator" | "library",
   "indicators": [
-    { "id": "unique_id", "type": "RSI|EMA|SMA|MACD|BollingerBands|Price|Volume|ATR|Session|Custom", "period": number, "source": "Close|Open|High|Low|Time" }
+    { 
+      "id": "unique_id", 
+      "type": "RSI|EMA|SMA|MACD|BollingerBands|Price|Volume|ATR|Session|Custom|FVG|BOS|CHoCH|OrderBlock|Killzone|MTF", 
+      "period": number | null,
+      "source": "Close|Open|High|Low|Time",
+      "timeframe": "current" | "D" | "W" | "4H" | "1H" | etc.,
+      "note": "Optional description for custom indicators"
+    }
   ],
   "rules": [
     {
       "id": number,
       "indicator": "Indicator Type or Signal Name",
-      "operator": "crosses_above|crosses_below|greater_than|less_than|equals|signal|session_start|session_end",
+      "operator": "crosses_above|crosses_below|greater_than|less_than|equals|signal|session_start|session_end|zone|sweep|in_zone",
       "value": number or null,
       "action": "Buy|Sell|Close Position|Signal|Alert|Breakout Long|Breakout Short",
-      "isEnabled": true
+      "isEnabled": true,
+      "timeframe": "current" | "D" | "W" | etc.
     }
   ]
 }
@@ -300,22 +364,13 @@ For Session indicators, use these standardized signals:
 - alertcondition(ta.crossover(close, sess1_high), ...) → { "indicator": "London High", "operator": "crosses_above", "action": "Breakout Long" }
 - alertcondition(ta.crossunder(close, sess1_low), ...) → { "indicator": "London Low", "operator": "crosses_below", "action": "Breakout Short" }
 
-## Smart Money Concepts Mapping
-- BOS (Break of Structure) Bullish → Buy signal
-- BOS Bearish → Sell signal
-- CHoCH (Change of Character) Bullish → Buy signal  
-- CHoCH Bearish → Sell signal
-- Bullish Order Block → Buy zone signal
-- Bearish Order Block → Sell zone signal
-- Bullish FVG (Fair Value Gap) → Buy signal
-- Bearish FVG → Sell signal
-
 ## Defaults (if not specified)
 - RSI period: 14
 - EMA period: 200
 - SMA period: 50
 - ATR period: 14
 - Source: "Close"
+- Timeframe: "current"
 """
 
 
