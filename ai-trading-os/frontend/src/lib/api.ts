@@ -153,6 +153,64 @@ class ApiClient {
             body: JSON.stringify({ server, login, password })
         });
     }
+
+    // ============================================
+    // EA Control API - Master Bot Alpha
+    // ============================================
+
+    async getEAStatus(botId: string = 'master-bot-alpha') {
+        return this.request<EAStatusResponse>(`/api/v1/bots/${botId}/control/status`);
+    }
+
+    async startTrading(botId: string = 'master-bot-alpha', dailyTarget: number = 100) {
+        return this.request<EAStatusResponse>(`/api/v1/bots/${botId}/control/start`, {
+            method: 'POST',
+            body: JSON.stringify({ daily_target: dailyTarget })
+        });
+    }
+
+    async stopTrading(botId: string = 'master-bot-alpha', reason: string = 'manual') {
+        return this.request<EAStatusResponse>(`/api/v1/bots/${botId}/control/stop?reason=${reason}`, {
+            method: 'POST'
+        });
+    }
+
+    async pauseTrading(botId: string = 'master-bot-alpha') {
+        return this.request<EAStatusResponse>(`/api/v1/bots/${botId}/control/pause`, {
+            method: 'POST'
+        });
+    }
+
+    async checkDailyTarget(botId: string = 'master-bot-alpha') {
+        return this.request<DailyTargetCheck>(`/api/v1/bots/${botId}/control/check-target`, {
+            method: 'POST'
+        });
+    }
+
+    async setDailyTarget(botId: string = 'master-bot-alpha', targetUsd: number = 100) {
+        return this.request(`/api/v1/bots/${botId}/control/set-target`, {
+            method: 'POST',
+            body: JSON.stringify({ target_usd: targetUsd })
+        });
+    }
+
+    async generateTradingPlan(botId: string = 'master-bot-alpha', symbol: string = 'XAUUSD', dailyTarget: number = 100) {
+        return this.request<TradingPlanResponse>(`/api/v1/bots/${botId}/ai/generate-plan?symbol=${symbol}&daily_target=${dailyTarget}`, {
+            method: 'POST'
+        });
+    }
+
+    async analyzeMarket(botId: string = 'master-bot-alpha', symbol: string = 'XAUUSD') {
+        return this.request<MarketAnalysisResponse>(`/api/v1/bots/${botId}/ai/analyze-market?symbol=${symbol}`);
+    }
+
+    async getJournalEntries(botId: string = 'master-bot-alpha', limit: number = 20) {
+        return this.request<JournalEntry[]>(`/api/v1/bots/${botId}/journal?limit=${limit}`);
+    }
+
+    async getDailyTargetSummary(botId: string = 'master-bot-alpha') {
+        return this.request<DailySummary>(`/api/v1/bots/${botId}/daily-target`);
+    }
 }
 
 // Types
@@ -335,6 +393,76 @@ export interface SystemHealth {
     mt5_connection: string;
 }
 
+// EA Control Types
+export interface EAStatusResponse {
+    status: 'stopped' | 'running' | 'paused' | 'target_reached' | 'error';
+    daily_profit: number;
+    daily_target: number;
+    target_reached: boolean;
+    total_trades: number;
+    open_positions: number;
+    message_th: string;
+}
+
+export interface DailyTargetCheck {
+    current_profit_usd: number;
+    target_profit_usd: number;
+    progress_percent: number;
+    target_reached: boolean;
+    auto_stopped: boolean;
+    is_running: boolean;
+    message_th: string;
+}
+
+export interface DailySummary {
+    date: string;
+    target_profit_usd: number;
+    current_profit_usd: number;
+    progress_percent: number;
+    target_reached: boolean;
+    auto_stopped: boolean;
+    total_trades: number;
+    winning_trades: number;
+    win_rate: number;
+}
+
+export interface IndicatorRecommendation {
+    name: string;
+    type: string;
+    params: Record<string, unknown>;
+    reason_th: string;
+    confidence: number;
+}
+
+export interface TradingPlanResponse {
+    plan_name: string;
+    indicators: IndicatorRecommendation[];
+    entry_rules_th: string[];
+    exit_rules_th: string[];
+    risk_per_trade: number;
+    daily_target_usd: number;
+    summary_th: string;
+}
+
+export interface MarketAnalysisResponse {
+    condition: 'trending_up' | 'trending_down' | 'ranging' | 'volatile' | 'quiet';
+    trend_strength: number;
+    volatility: number;
+    suggested_style: 'scalping' | 'day_trading' | 'swing' | 'position';
+    summary_th: string;
+}
+
+export interface JournalEntry {
+    id: number;
+    bot_id: string;
+    entry_type: string;
+    title: string;
+    ai_summary_th: string | null;
+    profit_usd: number;
+    created_at: string | null;
+}
+
 // Singleton instance
 export const api = new ApiClient();
 export default api;
+

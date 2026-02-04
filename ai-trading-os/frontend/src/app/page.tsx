@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Pause, Square, RotateCcw, XCircle } from 'lucide-react';
 import api, { PortfolioOverview, ExposureInfo } from '@/lib/api';
+import AIControlPanel from '@/components/dashboard/AIControlPanel';
 
 // Portfolio Metrics Component - Real-time from MT5
 function PortfolioMetrics() {
@@ -385,8 +386,9 @@ export default function Dashboard() {
       {/* Column 3: Control Panel & Status */}
       <div className="dashboard-column col-3">
         <div className="column-header">
-          <h2>Control Panel & Status</h2>
+          <h2>AI Control & Status</h2>
         </div>
+        <AIControlPanel />
         <ControlPanel />
       </div>
     </div>
