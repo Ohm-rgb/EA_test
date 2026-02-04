@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useShallow } from 'zustand/react/shallow';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { BotApi } from '@/services/botApi';
 
@@ -115,6 +116,7 @@ export interface PipelineState {
     removeIndicator: (id: string) => void;
     updateIndicatorParams: (id: string, params: Record<string, string | number | boolean>) => void;
     updateIndicatorStatus: (id: string, status: string) => void;
+    saveIndicatorConfig: (indicatorId: string, config: Record<string, string | number | boolean>) => Promise<boolean>;
 
     // =========================================================================
     // ACTIONS - Pipeline Configuration
@@ -147,6 +149,8 @@ export interface ApiIndicatorResponse {
     type?: string;
     status?: string;
     params?: Record<string, string | number | boolean>;
+    source?: string;
+    period?: number;
     is_bound?: boolean;
     is_enabled?: boolean;
     bot_indicator_id?: string | null;
@@ -155,17 +159,33 @@ export interface ApiIndicatorResponse {
 }
 
 function mapApiToIndicator(apiIndicator: ApiIndicatorResponse): IndicatorInstance {
+    // Merge source and period into params if they exist at top level
+    const baseParams = apiIndicator.params || {};
+
+    // Only include source if it's a short value like 'close', 'open', etc.
+    // Don't include if it's Pine Script code (long string)
+    const isValidSource = apiIndicator.source &&
+        typeof apiIndicator.source === 'string' &&
+        apiIndicator.source.length < 50 &&
+        !apiIndicator.source.includes('\n');
+
+    const mergedParams: Record<string, string | number | boolean> = {
+        ...baseParams,
+        ...(isValidSource ? { source: apiIndicator.source } : {}),
+        ...(apiIndicator.period !== undefined && apiIndicator.period !== null ? { period: apiIndicator.period } : {}),
+    };
+
     return {
         id: apiIndicator.id || apiIndicator.indicator_id || `ind_${Date.now()}`,
         indicatorId: apiIndicator.indicator_id || apiIndicator.id || `ind_${Date.now()}`,
         name: apiIndicator.name || apiIndicator.type || 'Unknown',
         type: apiIndicator.type || 'generic',
         status: apiIndicator.status || 'draft',
-        params: apiIndicator.params || {},
+        params: mergedParams,
         isBound: apiIndicator.is_bound ?? false,
         isEnabled: apiIndicator.is_enabled ?? false,
         botIndicatorId: apiIndicator.bot_indicator_id || null,
-        config: apiIndicator.config || apiIndicator.params || {},
+        config: apiIndicator.config || mergedParams,
         configHash: apiIndicator.config_hash || undefined,
     };
 }
@@ -378,12 +398,50 @@ export const useBotStore = create<PipelineState>()(
             console.log('[BotStore] updateIndicatorParams:', id, params);
             set((state) => ({
                 indicatorPool: state.indicatorPool.map(ind =>
-                    ind.id === id ? { ...ind, params: { ...ind.params, ...params } } : ind
+                    ind.id === id ? { ...ind, params: { ...ind.params, ...params }, config: { ...ind.config, ...params } } : ind
                 ),
                 availableIndicators: state.availableIndicators.map(ind =>
-                    ind.id === id ? { ...ind, params: { ...ind.params, ...params } } : ind
+                    ind.id === id ? { ...ind, params: { ...ind.params, ...params }, config: { ...ind.config, ...params } } : ind
                 ),
             }));
+        },
+
+        saveIndicatorConfig: async (indicatorId, config) => {
+            const { activeBotId } = get();
+            console.log('[BotStore] saveIndicatorConfig:', indicatorId, config);
+
+            try {
+                const response = await BotApi.updateIndicatorConfig(indicatorId, {
+                    config,
+                    context: {
+                        bound_bot_ids: activeBotId ? [activeBotId] : [],
+                        backtest_hash: 'pending_hash'
+                    }
+                });
+
+                console.log('[BotStore] saveIndicatorConfig success:', response);
+
+                // Update config hash in store
+                if (response.config_hash) {
+                    set((state) => ({
+                        indicatorPool: state.indicatorPool.map(ind =>
+                            ind.id === indicatorId || ind.indicatorId === indicatorId
+                                ? { ...ind, configHash: response.config_hash }
+                                : ind
+                        ),
+                        availableIndicators: state.availableIndicators.map(ind =>
+                            ind.id === indicatorId || ind.indicatorId === indicatorId
+                                ? { ...ind, configHash: response.config_hash }
+                                : ind
+                        ),
+                    }));
+                }
+
+                return true;
+            } catch (error) {
+                console.error('[BotStore] saveIndicatorConfig error:', error);
+                return false;
+            }
         },
 
         updateIndicatorStatus: (id, status) => {
@@ -487,7 +545,7 @@ export function useBoundIndicators() {
 }
 
 export function useIndicatorActions() {
-    return useBotStore((state) => ({
+    return useBotStore(useShallow((state) => ({
         bind: state.bindIndicator,
         unbind: state.unbindIndicator,
         refresh: state.refreshIndicators,
@@ -495,7 +553,8 @@ export function useIndicatorActions() {
         remove: state.removeIndicator,
         updateParams: state.updateIndicatorParams,
         updateStatus: state.updateIndicatorStatus,
-    }));
+        saveConfig: state.saveIndicatorConfig,
+    })));
 }
 
 export function useActiveBotId() {
