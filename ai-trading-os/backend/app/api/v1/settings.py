@@ -360,6 +360,99 @@ async def test_mt5_connection(
     return response
 
 
+@router.post("/mt5/connect")
+async def connect_mt5(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Connect to MT5 Terminal using saved credentials"""
+    from app.services.mt5_service import mt5_service
+    
+    # Get saved MT5 credentials from settings
+    settings = db.query(Settings).first()
+    if not settings:
+        raise HTTPException(status_code=404, detail="Settings not found")
+    
+    # Check if credentials are saved
+    mt5_server = getattr(settings, 'mt5_server', None)
+    mt5_login = getattr(settings, 'mt5_login', None)
+    mt5_password = getattr(settings, 'mt5_password', None)
+    
+    # If no saved credentials, just initialize MT5 Terminal
+    if not mt5_server or not mt5_login:
+        # Try to just initialize MT5 (for auto-login scenarios)
+        success = mt5_service.initialize()
+        if success:
+            return {
+                "status": "connected",
+                "message": "MT5 Terminal initialized successfully"
+            }
+        else:
+            return {
+                "status": "error",
+                "message": "MT5 Terminal not running. Please start MetaTrader 5."
+            }
+    
+    # Connect with saved credentials
+    try:
+        result = mt5_service.test_connection(
+            server=mt5_server,
+            login=int(mt5_login),
+            password=mt5_password
+        )
+        
+        return {
+            "status": result.status.value,
+            "message": result.message,
+            "account_info": {
+                "server": result.account_info.server,
+                "login": result.account_info.login,
+                "balance": result.account_info.balance,
+                "equity": result.account_info.equity,
+                "currency": result.account_info.currency,
+            } if result.account_info else None
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+
+
+@router.post("/mt5/disconnect")
+async def disconnect_mt5(
+    current_user: dict = Depends(get_current_user)
+):
+    """Disconnect from MT5 Terminal"""
+    from app.services.mt5_service import mt5_service
+    
+    try:
+        mt5_service.shutdown()
+        return {
+            "status": "disconnected",
+            "message": "Successfully disconnected from MT5 Terminal"
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+
+
+@router.get("/mt5/status")
+async def get_mt5_status(
+    current_user: dict = Depends(get_current_user)
+):
+    """Get current MT5 connection status"""
+    from app.services.mt5_service import mt5_service
+    
+    return {
+        "connected": mt5_service.is_connected,
+        "available": mt5_service.is_available,
+        "account_info": mt5_service.get_account_info() if mt5_service.is_connected else None
+    }
+
+
 # API Key format validators
 GEMINI_KEY_PATTERN = re.compile(r"^AIza[A-Za-z0-9_-]{30,}$")  # Relaxed validation
 OPENAI_KEY_PATTERN = re.compile(r"^sk-[A-Za-z0-9]{30,}$")    # Relaxed validation

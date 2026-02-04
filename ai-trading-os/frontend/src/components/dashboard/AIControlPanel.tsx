@@ -16,6 +16,7 @@ export function AIControlPanel({ botId = 'master-bot-alpha' }: AIControlPanelPro
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'control' | 'plan' | 'journal'>('control');
+    const [isCollapsed, setIsCollapsed] = useState(false);
 
     // Fetch status on mount and every 5 seconds
     useEffect(() => {
@@ -123,59 +124,72 @@ export function AIControlPanel({ botId = 'master-bot-alpha' }: AIControlPanelPro
     };
 
     return (
-        <div className="ai-control-panel">
+        <div className={`ai-control-panel ${isCollapsed ? 'collapsed' : ''}`}>
             {/* Header */}
             <div className="panel-header">
                 <h3>🤖 Master Bot Alpha</h3>
-                <span className="status-badge" style={{ color: getStatusColor() }}>
-                    {getStatusIcon()} {status?.status || 'loading...'}
-                </span>
+                <div className="header-actions">
+                    <span className="status-badge" style={{ color: getStatusColor() }}>
+                        {getStatusIcon()} {status?.status || 'loading...'}
+                    </span>
+                    <button
+                        className="collapse-btn"
+                        onClick={() => setIsCollapsed(!isCollapsed)}
+                        title={isCollapsed ? 'ขยาย' : 'ยุบ'}
+                    >
+                        {isCollapsed ? '▼' : '▲'}
+                    </button>
+                </div>
             </div>
 
-            {/* Tab Navigation */}
-            <div className="tab-nav">
-                <button
-                    className={`tab-btn ${activeTab === 'control' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('control')}
-                >
-                    ⚙️ Control
-                </button>
-                <button
-                    className={`tab-btn ${activeTab === 'plan' ? 'active' : ''}`}
-                    onClick={() => { setActiveTab('plan'); if (!tradingPlan) handleGeneratePlan(); }}
-                >
-                    📋 AI Plan
-                </button>
-                <button
-                    className={`tab-btn ${activeTab === 'journal' ? 'active' : ''}`}
-                    onClick={() => { setActiveTab('journal'); fetchJournal(); }}
-                >
-                    📝 Journal
-                </button>
-            </div>
+            {/* Tab Navigation - only show when not collapsed */}
+            {!isCollapsed && (
+                <div className="tab-nav">
+                    <button
+                        className={`tab-btn ${activeTab === 'control' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('control')}
+                    >
+                        ⚙️ Control
+                    </button>
+                    <button
+                        className={`tab-btn ${activeTab === 'plan' ? 'active' : ''}`}
+                        onClick={() => { setActiveTab('plan'); if (!tradingPlan) handleGeneratePlan(); }}
+                    >
+                        📋 AI Plan
+                    </button>
+                    <button
+                        className={`tab-btn ${activeTab === 'journal' ? 'active' : ''}`}
+                        onClick={() => { setActiveTab('journal'); fetchJournal(); }}
+                    >
+                        📝 Journal
+                    </button>
+                </div>
+            )}
 
-            {/* Tab Content */}
-            <div className="tab-content">
-                {activeTab === 'control' && (
-                    <ControlTab
-                        status={status}
-                        dailySummary={dailySummary}
-                        loading={loading}
-                        error={error}
-                        onStart={handleStart}
-                        onStop={handleStop}
-                        onGeneratePlan={handleGeneratePlan}
-                    />
-                )}
+            {/* Tab Content - only show when not collapsed */}
+            {!isCollapsed && (
+                <div className="tab-content">
+                    {activeTab === 'control' && (
+                        <ControlTab
+                            status={status}
+                            dailySummary={dailySummary}
+                            loading={loading}
+                            error={error}
+                            onStart={handleStart}
+                            onStop={handleStop}
+                            onGeneratePlan={handleGeneratePlan}
+                        />
+                    )}
 
-                {activeTab === 'plan' && (
-                    <PlanTab plan={tradingPlan} loading={loading} />
-                )}
+                    {activeTab === 'plan' && (
+                        <PlanTab plan={tradingPlan} loading={loading} />
+                    )}
 
-                {activeTab === 'journal' && (
-                    <JournalTab entries={journalEntries} />
-                )}
-            </div>
+                    {activeTab === 'journal' && (
+                        <JournalTab entries={journalEntries} />
+                    )}
+                </div>
+            )}
         </div>
     );
 }

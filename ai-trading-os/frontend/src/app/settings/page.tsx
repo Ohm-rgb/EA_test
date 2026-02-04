@@ -21,6 +21,92 @@ export default function Settings() {
     const [mt5Password, setMt5Password] = useState('');
     const [mt5Status, setMt5Status] = useState<'idle' | 'connected' | 'error'>('idle');
     const [mt5AccountInfo, setMt5AccountInfo] = useState<MT5AccountInfo | null>(null);
+
+    // Saved MT5 Accounts
+    interface SavedMT5Account {
+        id: string;
+        name: string;
+        server: string;
+        login: string;
+        password: string;
+    }
+    const [savedMT5Accounts, setSavedMT5Accounts] = useState<SavedMT5Account[]>([]);
+    const [selectedAccountId, setSelectedAccountId] = useState<string>('');
+
+    // Load saved accounts from localStorage
+    useEffect(() => {
+        const saved = localStorage.getItem('mt5_accounts');
+        if (saved) {
+            try {
+                setSavedMT5Accounts(JSON.parse(saved));
+            } catch (e) {
+                console.error('Failed to parse saved MT5 accounts', e);
+            }
+        }
+    }, []);
+
+    // Save account to localStorage
+    const handleSaveMT5Account = () => {
+        if (!mt5Server || !mt5Login || !mt5Password) {
+            setMessage({ type: 'error', text: 'กรุณากรอกข้อมูลให้ครบถ้วน' });
+            return;
+        }
+
+        const accountName = prompt('ตั้งชื่อบัญชี (เช่น Demo XM, Live IC):', `${mt5Server.split('-')[0]} - ${mt5Login}`);
+        if (!accountName) return;
+
+        const newAccount: SavedMT5Account = {
+            id: Date.now().toString(),
+            name: accountName,
+            server: mt5Server,
+            login: mt5Login,
+            password: mt5Password
+        };
+
+        const updated = [...savedMT5Accounts, newAccount];
+        setSavedMT5Accounts(updated);
+        localStorage.setItem('mt5_accounts', JSON.stringify(updated));
+        setSelectedAccountId(newAccount.id);
+        setMessage({ type: 'success', text: `บันทึก "${accountName}" สำเร็จ` });
+    };
+
+    // Delete saved account
+    const handleDeleteMT5Account = (accountId: string) => {
+        const account = savedMT5Accounts.find(a => a.id === accountId);
+        if (!account) return;
+
+        if (!confirm(`ลบบัญชี "${account.name}" หรือไม่?`)) return;
+
+        const updated = savedMT5Accounts.filter(a => a.id !== accountId);
+        setSavedMT5Accounts(updated);
+        localStorage.setItem('mt5_accounts', JSON.stringify(updated));
+        if (selectedAccountId === accountId) {
+            setSelectedAccountId('');
+            setMt5Server('');
+            setMt5Login('');
+            setMt5Password('');
+        }
+        setMessage({ type: 'success', text: `ลบบัญชี "${account.name}" แล้ว` });
+    };
+
+    // Select saved account
+    const handleSelectMT5Account = (accountId: string) => {
+        const account = savedMT5Accounts.find(a => a.id === accountId);
+        if (account) {
+            setSelectedAccountId(accountId);
+            setMt5Server(account.server);
+            setMt5Login(account.login);
+            setMt5Password(account.password);
+            setMt5Status('idle');
+            setMt5AccountInfo(null);
+        } else {
+            setSelectedAccountId('');
+            setMt5Server('');
+            setMt5Login('');
+            setMt5Password('');
+        }
+    };
+
     useEffect(() => {
         loadSettings();
     }, []);
@@ -229,6 +315,36 @@ export default function Settings() {
                         </div>
 
                         <div className="space-y-3">
+                            {/* Saved Accounts Dropdown */}
+                            {savedMT5Accounts.length > 0 && (
+                                <div>
+                                    <label className="block text-xs text-[var(--text-secondary)] mb-1">บัญชีที่บันทึกไว้</label>
+                                    <div className="flex gap-2">
+                                        <select
+                                            className="dropdown flex-1 text-sm"
+                                            value={selectedAccountId}
+                                            onChange={(e) => handleSelectMT5Account(e.target.value)}
+                                        >
+                                            <option value="">-- เลือกบัญชี --</option>
+                                            {savedMT5Accounts.map(acc => (
+                                                <option key={acc.id} value={acc.id}>
+                                                    ⭐ {acc.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {selectedAccountId && (
+                                            <button
+                                                onClick={() => handleDeleteMT5Account(selectedAccountId)}
+                                                className="px-3 py-2 rounded-lg bg-[var(--color-critical)]/10 text-[var(--color-critical)] hover:bg-[var(--color-critical)]/20 text-sm"
+                                                title="ลบบัญชี"
+                                            >
+                                                🗑️
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
                             <div>
                                 <label className="block text-xs text-[var(--text-secondary)] mb-1">Server</label>
                                 <input
@@ -291,43 +407,54 @@ export default function Settings() {
                                 </div>
                             )}
 
-                            <Button
-                                variant="primary"
-                                className="w-full text-sm"
-                                disabled={testingMT5 || !mt5Server || !mt5Login || !mt5Password}
-                                onClick={async () => {
-                                    setTestingMT5(true);
-                                    setMessage(null);
-                                    try {
-                                        const res = await api.testMT5Connection(mt5Server, mt5Login, mt5Password);
-                                        if (res.status === 'connected') {
-                                            setMt5Status('connected');
-                                            setMt5AccountInfo(res.account_info || null);
-                                            setMessage({ type: 'success', text: `Connected! Balance: ${res.account_info?.balance?.toLocaleString()} ${res.account_info?.currency}` });
-                                        } else {
+                            {/* Action Buttons */}
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="primary"
+                                    className="flex-1 text-sm"
+                                    disabled={testingMT5 || !mt5Server || !mt5Login || !mt5Password}
+                                    onClick={async () => {
+                                        setTestingMT5(true);
+                                        setMessage(null);
+                                        try {
+                                            const res = await api.testMT5Connection(mt5Server, mt5Login, mt5Password);
+                                            if (res.status === 'connected') {
+                                                setMt5Status('connected');
+                                                setMt5AccountInfo(res.account_info || null);
+                                                setMessage({ type: 'success', text: `Connected! Balance: ${res.account_info?.balance?.toLocaleString()} ${res.account_info?.currency}` });
+                                            } else {
+                                                setMt5Status('error');
+                                                setMt5AccountInfo(null);
+                                                setMessage({ type: 'error', text: res.message });
+                                            }
+                                        } catch (e: unknown) {
                                             setMt5Status('error');
                                             setMt5AccountInfo(null);
-                                            setMessage({ type: 'error', text: res.message });
+                                            const errorMessage = e instanceof Error ? e.message : 'Connection failed';
+                                            setMessage({ type: 'error', text: errorMessage });
+                                        } finally {
+                                            setTestingMT5(false);
                                         }
-                                    } catch (e: unknown) {
-                                        setMt5Status('error');
-                                        setMt5AccountInfo(null);
-                                        const errorMessage = e instanceof Error ? e.message : 'Connection failed';
-                                        setMessage({ type: 'error', text: errorMessage });
-                                    } finally {
-                                        setTestingMT5(false);
-                                    }
-                                }}
-                            >
-                                {testingMT5 ? (
-                                    <span className="flex items-center gap-2 justify-center">
-                                        <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></span>
-                                        Connecting...
-                                    </span>
-                                ) : (
-                                    "Test MT5 Connection"
-                                )}
-                            </Button>
+                                    }}
+                                >
+                                    {testingMT5 ? (
+                                        <span className="flex items-center gap-2 justify-center">
+                                            <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></span>
+                                            Connecting...
+                                        </span>
+                                    ) : (
+                                        "Test Connection"
+                                    )}
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    className="text-sm px-4 border border-[var(--color-accent)]"
+                                    disabled={!mt5Server || !mt5Login || !mt5Password}
+                                    onClick={handleSaveMT5Account}
+                                >
+                                    ⭐ บันทึก
+                                </Button>
+                            </div>
                         </div>
                     </GlassCard>
 

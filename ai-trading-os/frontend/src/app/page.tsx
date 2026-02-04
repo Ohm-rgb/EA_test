@@ -180,29 +180,62 @@ function ActiveOrders() {
 
 // Control Panel Component
 function ControlPanel() {
-  const [mt5Connected, setMt5Connected] = useState(true);
+  const [mt5Connected, setMt5Connected] = useState(false);
+  const [mt5Loading, setMt5Loading] = useState(false);
   const [aiLocalActive, setAiLocalActive] = useState(true);
   const [aiCloudActive, setAiCloudActive] = useState(false);
   const [autoTrading, setAutoTrading] = useState(true);
   const [riskLevel, setRiskLevel] = useState<'low' | 'mid' | 'high'>('mid');
   const [accountData, setAccountData] = useState<PortfolioOverview | null>(null);
 
+  // Fetch account data and MT5 status
   useEffect(() => {
     const fetchAccountData = async () => {
       try {
         const data = await api.getPortfolioOverview();
         setAccountData(data);
-        setMt5Connected(data.balance > 0); // Assume connected if balance > 0
       } catch (e) {
         console.error('Failed to fetch account data:', e);
-        setMt5Connected(false);
+      }
+    };
+
+    const fetchMT5Status = async () => {
+      try {
+        const status = await api.getMT5Status();
+        setMt5Connected(status.connected ?? false);
+      } catch (e) {
+        console.error('Failed to fetch MT5 status:', e);
       }
     };
 
     fetchAccountData();
-    const interval = setInterval(fetchAccountData, 5000); // Refresh every 5s
+    fetchMT5Status();
+    const interval = setInterval(fetchAccountData, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  // Handle MT5 toggle
+  const handleMT5Toggle = async () => {
+    setMt5Loading(true);
+    try {
+      if (mt5Connected) {
+        // Disconnect
+        const result = await api.disconnectMT5();
+        setMt5Connected(result.status !== 'disconnected' ? false : false);
+        alert(result.message);
+      } else {
+        // Connect
+        const result = await api.connectMT5();
+        setMt5Connected(result.status === 'connected');
+        alert(result.message);
+      }
+    } catch (e) {
+      console.error('MT5 toggle error:', e);
+      alert('ไม่สามารถเชื่อมต่อ MT5 ได้ กรุณาเปิด MetaTrader 5 Terminal');
+    } finally {
+      setMt5Loading(false);
+    }
+  };
 
   return (
     <div className="control-panel">
@@ -212,8 +245,9 @@ function ControlPanel() {
         <div className="status-item">
           <span className="status-label">MT5</span>
           <button
-            className={`mini-toggle ${mt5Connected ? 'on' : ''}`}
-            onClick={() => setMt5Connected(!mt5Connected)}
+            className={`mini-toggle ${mt5Connected ? 'on' : ''} ${mt5Loading ? 'loading' : ''}`}
+            onClick={handleMT5Toggle}
+            disabled={mt5Loading}
           >
             <span className="mini-toggle-slider" />
           </button>

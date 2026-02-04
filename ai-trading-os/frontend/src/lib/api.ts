@@ -154,6 +154,23 @@ class ApiClient {
         });
     }
 
+    // MT5 Connection Control
+    async connectMT5() {
+        return this.request<MT5StatusResponse>('/api/v1/settings/mt5/connect', {
+            method: 'POST'
+        });
+    }
+
+    async disconnectMT5() {
+        return this.request<MT5StatusResponse>('/api/v1/settings/mt5/disconnect', {
+            method: 'POST'
+        });
+    }
+
+    async getMT5Status() {
+        return this.request<MT5StatusResponse>('/api/v1/settings/mt5/status');
+    }
+
     // ============================================
     // EA Control API - Master Bot Alpha
     // ============================================
@@ -460,6 +477,20 @@ export interface JournalEntry {
     ai_summary_th: string | null;
     profit_usd: number;
     created_at: string | null;
+}
+
+export interface MT5StatusResponse {
+    status: 'connected' | 'disconnected' | 'error' | 'not_installed';
+    message: string;
+    connected?: boolean;
+    available?: boolean;
+    account_info?: {
+        server: string;
+        login: number;
+        balance: number;
+        equity: number;
+        currency: string;
+    } | null;
 }
 
 // Singleton instance
