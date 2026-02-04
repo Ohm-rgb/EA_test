@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Pause, Square, RotateCcw, XCircle } from 'lucide-react';
 
 // Portfolio Metrics Component
 function PortfolioMetrics() {
@@ -136,7 +137,7 @@ function ActiveOrders() {
         <thead>
           <tr>
             <th>TYPE</th>
-            <th>NTRY</th>
+            <th>ENTRY</th>
             <th>P/L</th>
           </tr>
         </thead>
@@ -255,11 +256,23 @@ function ControlPanel() {
       {/* Quick Actions */}
       <div className="quick-actions">
         <h4 className="actions-title">Quick Action</h4>
-        <div className="action-buttons">
-          <button className="action-btn">PAUSE</button>
-          <button className="action-btn">STOP ALL</button>
-          <button className="action-btn">RESTART</button>
-          <button className="action-btn">close all</button>
+        <div className="grid grid-cols-2 gap-3">
+          <button className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/20 text-[var(--color-warning)] hover:bg-[var(--color-warning)]/20 transition-all">
+            <Pause size={20} />
+            <span className="text-xs font-bold tracking-wider">PAUSE</span>
+          </button>
+          <button className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-[var(--color-critical)]/10 border border-[var(--color-critical)]/20 text-[var(--color-critical)] hover:bg-[var(--color-critical)]/20 transition-all">
+            <Square size={20} fill="currentColor" />
+            <span className="text-xs font-bold tracking-wider">STOP ALL</span>
+          </button>
+          <button className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-[var(--color-info)]/10 border border-[var(--color-info)]/20 text-[var(--color-info)] hover:bg-[var(--color-info)]/20 transition-all">
+            <RotateCcw size={20} />
+            <span className="text-xs font-bold tracking-wider">RESTART</span>
+          </button>
+          <button className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-[#64748b]/10 border border-[#64748b]/20 text-[#94a3b8] hover:bg-[#64748b]/20 hover:text-white transition-all">
+            <XCircle size={20} />
+            <span className="text-xs font-bold tracking-wider uppercase">Close All</span>
+          </button>
         </div>
       </div>
 
