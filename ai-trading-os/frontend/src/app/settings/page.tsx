@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { TopBar } from "@/components/layout";
 import { GlassCard, Button, Chip, Badge, ProgressBar } from "@/components/ui";
-import api, { Settings as SettingsType, AISettings } from "@/lib/api";
+import api, { Settings as SettingsType, AISettings, MT5AccountInfo } from "@/lib/api";
 
 export default function Settings() {
     const [settings, setSettings] = useState<SettingsType | null>(null);
@@ -12,7 +12,15 @@ export default function Settings() {
     const [saving, setSaving] = useState(false);
     const [advancedMode, setAdvancedMode] = useState(false);
     const [testingConnection, setTestingConnection] = useState(false);
+    const [testingMT5, setTestingMT5] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+    // MT5 Connection State
+    const [mt5Server, setMt5Server] = useState('');
+    const [mt5Login, setMt5Login] = useState('');
+    const [mt5Password, setMt5Password] = useState('');
+    const [mt5Status, setMt5Status] = useState<'idle' | 'connected' | 'error'>('idle');
+    const [mt5AccountInfo, setMt5AccountInfo] = useState<MT5AccountInfo | null>(null);
     useEffect(() => {
         loadSettings();
     }, []);
@@ -202,40 +210,123 @@ export default function Settings() {
                         </div>
                     </GlassCard>
 
-                    {/* Row 1 Right - Integrations */}
+                    {/* Row 1 Right - Integrations (MT5) */}
                     <GlassCard>
                         <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
                                 <span className="text-[var(--color-warning)] text-xl">🔌</span>
-                                <h3 className="text-lg font-semibold">Integrations</h3>
+                                <h3 className="text-lg font-semibold">MT5 Connection</h3>
                             </div>
+                            {mt5Status === 'connected' && (
+                                <Badge variant="success">Connected</Badge>
+                            )}
+                            {mt5Status === 'error' && (
+                                <Badge variant="danger">Error</Badge>
+                            )}
+                            {mt5Status === 'idle' && (
+                                <Badge variant="warning">Not Tested</Badge>
+                            )}
                         </div>
 
                         <div className="space-y-3">
                             <div>
-                                <div className="flex justify-between items-center mb-2">
-                                    <label className="text-sm font-medium">MT5 Connection</label>
-                                    <Badge variant="success">Connected</Badge>
-                                </div>
-                                <label className="block text-xs text-[var(--text-secondary)] mb-1">Server Address</label>
-                                <div className="input-field mb-2 bg-[var(--bg-input)] text-sm">
-                                    {settings.mt5_server || 'Not set'}
-                                </div>
+                                <label className="block text-xs text-[var(--text-secondary)] mb-1">Server</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. ICMarkets-Demo"
+                                    value={mt5Server}
+                                    onChange={(e) => setMt5Server(e.target.value)}
+                                    className="input-field w-full text-sm"
+                                />
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-xs text-[var(--text-secondary)] mb-1">Login ID</label>
-                                    <div className="input-field bg-[var(--bg-input)] text-sm">123456789</div>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. 12345678"
+                                        value={mt5Login}
+                                        onChange={(e) => setMt5Login(e.target.value)}
+                                        className="input-field w-full text-sm"
+                                    />
                                 </div>
                                 <div>
-                                    <label className="block text-xs text-[var(--text-secondary)] mb-1">Account Type</label>
-                                    <div className="input-field bg-[var(--bg-input)] text-sm">{settings.mt5_account_type}</div>
+                                    <label className="block text-xs text-[var(--text-secondary)] mb-1">Password</label>
+                                    <input
+                                        type="password"
+                                        placeholder="••••••••"
+                                        value={mt5Password}
+                                        onChange={(e) => setMt5Password(e.target.value)}
+                                        className="input-field w-full text-sm"
+                                    />
                                 </div>
                             </div>
 
-                            <Button variant="ghost" className="w-full text-sm">
-                                Test Connection
+                            {/* Account Info Display */}
+                            {mt5AccountInfo && (
+                                <div className="p-3 rounded-lg bg-[var(--bg-tertiary)] space-y-1">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-[var(--text-secondary)]">Account</span>
+                                        <span className="font-medium">{mt5AccountInfo.name}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-[var(--text-secondary)]">Balance</span>
+                                        <span className="text-[var(--color-success)] font-medium">
+                                            {mt5AccountInfo.balance.toLocaleString()} {mt5AccountInfo.currency}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-[var(--text-secondary)]">Equity</span>
+                                        <span>{mt5AccountInfo.equity.toLocaleString()} {mt5AccountInfo.currency}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-[var(--text-secondary)]">Leverage</span>
+                                        <span>1:{mt5AccountInfo.leverage}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-[var(--text-secondary)]">Broker</span>
+                                        <span className="text-xs">{mt5AccountInfo.company}</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            <Button
+                                variant="primary"
+                                className="w-full text-sm"
+                                disabled={testingMT5 || !mt5Server || !mt5Login || !mt5Password}
+                                onClick={async () => {
+                                    setTestingMT5(true);
+                                    setMessage(null);
+                                    try {
+                                        const res = await api.testMT5Connection(mt5Server, mt5Login, mt5Password);
+                                        if (res.status === 'connected') {
+                                            setMt5Status('connected');
+                                            setMt5AccountInfo(res.account_info || null);
+                                            setMessage({ type: 'success', text: `Connected! Balance: ${res.account_info?.balance?.toLocaleString()} ${res.account_info?.currency}` });
+                                        } else {
+                                            setMt5Status('error');
+                                            setMt5AccountInfo(null);
+                                            setMessage({ type: 'error', text: res.message });
+                                        }
+                                    } catch (e: unknown) {
+                                        setMt5Status('error');
+                                        setMt5AccountInfo(null);
+                                        const errorMessage = e instanceof Error ? e.message : 'Connection failed';
+                                        setMessage({ type: 'error', text: errorMessage });
+                                    } finally {
+                                        setTestingMT5(false);
+                                    }
+                                }}
+                            >
+                                {testingMT5 ? (
+                                    <span className="flex items-center gap-2 justify-center">
+                                        <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></span>
+                                        Connecting...
+                                    </span>
+                                ) : (
+                                    "Test MT5 Connection"
+                                )}
                             </Button>
                         </div>
                     </GlassCard>

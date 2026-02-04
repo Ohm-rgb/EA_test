@@ -50,30 +50,56 @@ async def get_portfolio_overview(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    """Get portfolio overview - Balance, Equity, P/L"""
-    # In real implementation, this would fetch from MT5
-    # For now, return mock data
-    trades = db.query(Trade).filter(Trade.status == "closed").all()
-    total_pnl = sum(t.profit or 0 for t in trades)
+    """Get portfolio overview - Balance, Equity, P/L from MT5"""
+    from app.services.mt5_service import mt5_service
     
-    # Calculate daily P/L
-    today = datetime.utcnow().date()
-    today_trades = [t for t in trades if t.closed_at and t.closed_at.date() == today]
-    daily_pnl = sum(t.profit or 0 for t in today_trades)
+    # Try to get real data from MT5
+    account_info = mt5_service.get_account_info()
     
-    # Mock balance (would come from MT5)
-    initial_balance = 10000.0
-    balance = initial_balance + total_pnl
-    
-    return PortfolioOverview(
-        balance=round(balance, 2),
-        equity=round(balance, 2),  # Equity = Balance when no open trades
-        margin_used=0.0,
-        free_margin=round(balance, 2),
-        daily_pnl=round(daily_pnl, 2),
-        daily_pnl_percent=round((daily_pnl / initial_balance) * 100, 2) if initial_balance else 0,
-        total_pnl=round(total_pnl, 2)
-    )
+    if account_info:
+        # Real MT5 data
+        balance = account_info.get("balance", 0)
+        equity = account_info.get("equity", 0)
+        margin = account_info.get("margin", 0)
+        margin_free = account_info.get("margin_free", 0)
+        profit = account_info.get("profit", 0)
+        
+        # Calculate daily P/L from trades
+        today = datetime.utcnow().date()
+        trades = db.query(Trade).filter(Trade.status == "closed").all()
+        today_trades = [t for t in trades if t.closed_at and t.closed_at.date() == today]
+        daily_pnl = sum(t.profit or 0 for t in today_trades)
+        
+        return PortfolioOverview(
+            balance=round(balance, 2),
+            equity=round(equity, 2),
+            margin_used=round(margin, 2),
+            free_margin=round(margin_free, 2),
+            daily_pnl=round(daily_pnl + profit, 2),  # Include unrealized P/L
+            daily_pnl_percent=round(((daily_pnl + profit) / balance) * 100, 2) if balance else 0,
+            total_pnl=round(profit, 2)  # Current unrealized P/L
+        )
+    else:
+        # Fallback to mock data if MT5 not connected
+        trades = db.query(Trade).filter(Trade.status == "closed").all()
+        total_pnl = sum(t.profit or 0 for t in trades)
+        
+        today = datetime.utcnow().date()
+        today_trades = [t for t in trades if t.closed_at and t.closed_at.date() == today]
+        daily_pnl = sum(t.profit or 0 for t in today_trades)
+        
+        initial_balance = 10000.0
+        balance = initial_balance + total_pnl
+        
+        return PortfolioOverview(
+            balance=round(balance, 2),
+            equity=round(balance, 2),
+            margin_used=0.0,
+            free_margin=round(balance, 2),
+            daily_pnl=round(daily_pnl, 2),
+            daily_pnl_percent=round((daily_pnl / initial_balance) * 100, 2) if initial_balance else 0,
+            total_pnl=round(total_pnl, 2)
+        )
 
 
 @router.get("/equity-curve", response_model=List[EquityPoint])
@@ -144,31 +170,80 @@ async def get_current_exposure(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    """Get current market exposure"""
-    open_trades = db.query(Trade).filter(Trade.status == "open").all()
+    """Get current market exposure from MT5"""
+    from app.services.mt5_service import mt5_service
     
-    # Group by symbol
-    exposure_map = {}
-    for trade in open_trades:
-        if trade.symbol not in exposure_map:
-            exposure_map[trade.symbol] = {"long": 0, "short": 0, "pnl": 0}
+    # Try to get real positions from MT5
+    mt5_positions = mt5_service.get_positions()
+    
+    if mt5_positions:
+        # Group by symbol
+        exposure_map = {}
+        for pos in mt5_positions:
+            symbol = pos.get("symbol", "UNKNOWN")
+            if symbol not in exposure_map:
+                exposure_map[symbol] = {"long": 0, "short": 0, "pnl": 0}
+            
+            if pos.get("type") == "buy":
+                exposure_map[symbol]["long"] += pos.get("volume", 0)
+            else:
+                exposure_map[symbol]["short"] += pos.get("volume", 0)
+            
+            exposure_map[symbol]["pnl"] += pos.get("profit", 0)
         
-        if trade.trade_type == "buy":
-            exposure_map[trade.symbol]["long"] += trade.lot_size
-        else:
-            exposure_map[trade.symbol]["short"] += trade.lot_size
+        results = []
+        for symbol, data in exposure_map.items():
+            net_lots = data["long"] - data["short"]
+            direction = "long" if net_lots > 0 else "short" if net_lots < 0 else "neutral"
+            results.append(ExposureInfo(
+                symbol=symbol,
+                direction=direction,
+                lots=abs(net_lots),
+                current_pnl=round(data["pnl"], 2)
+            ))
         
-        exposure_map[trade.symbol]["pnl"] += trade.profit or 0
+        return results
+    else:
+        # Fallback to database
+        open_trades = db.query(Trade).filter(Trade.status == "open").all()
+        
+        exposure_map = {}
+        for trade in open_trades:
+            if trade.symbol not in exposure_map:
+                exposure_map[trade.symbol] = {"long": 0, "short": 0, "pnl": 0}
+            
+            if trade.trade_type == "buy":
+                exposure_map[trade.symbol]["long"] += trade.lot_size
+            else:
+                exposure_map[trade.symbol]["short"] += trade.lot_size
+            
+            exposure_map[trade.symbol]["pnl"] += trade.profit or 0
+        
+        results = []
+        for symbol, data in exposure_map.items():
+            net_lots = data["long"] - data["short"]
+            direction = "long" if net_lots > 0 else "short" if net_lots < 0 else "neutral"
+            results.append(ExposureInfo(
+                symbol=symbol,
+                direction=direction,
+                lots=abs(net_lots),
+                current_pnl=round(data["pnl"], 2)
+            ))
+        
+        return results
+
+
+@router.get("/positions")
+async def get_mt5_positions(
+    current_user: dict = Depends(get_current_user)
+):
+    """Get open positions directly from MT5"""
+    from app.services.mt5_service import mt5_service
     
-    results = []
-    for symbol, data in exposure_map.items():
-        net_lots = data["long"] - data["short"]
-        direction = "long" if net_lots > 0 else "short" if net_lots < 0 else "neutral"
-        results.append(ExposureInfo(
-            symbol=symbol,
-            direction=direction,
-            lots=abs(net_lots),
-            current_pnl=round(data["pnl"], 2)
-        ))
+    positions = mt5_service.get_positions()
     
-    return results
+    return {
+        "connected": mt5_service.is_connected,
+        "positions": positions,
+        "total_positions": len(positions)
+    }

@@ -146,12 +146,38 @@ class ApiClient {
             method: 'POST'
         });
     }
+
+    async testMT5Connection(server: string, login: string, password: string) {
+        return this.request<MT5TestResponse>('/api/v1/settings/test-mt5', {
+            method: 'POST',
+            body: JSON.stringify({ server, login, password })
+        });
+    }
 }
 
 // Types
 export interface TestAIResponse {
     ollama: { status: string; message: string };
     gemini: { status: string; message: string };
+}
+
+export interface MT5AccountInfo {
+    server: string;
+    login: number;
+    balance: number;
+    equity: number;
+    margin_free: number;
+    currency: string;
+    leverage: number;
+    name: string;
+    company: string;
+}
+
+export interface MT5TestResponse {
+    status: 'connected' | 'error' | 'disconnected' | 'not_installed';
+    message: string;
+    account_info?: MT5AccountInfo;
+    error_code?: number;
 }
 export interface PortfolioOverview {
     balance: number;

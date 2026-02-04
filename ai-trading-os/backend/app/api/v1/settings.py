@@ -316,24 +316,48 @@ async def test_mt5_connection(
     data: MT5ConnectionTest,
     current_user: dict = Depends(get_current_user)
 ):
-    """Test MT5 connection"""
-    # In real implementation, this would test actual MT5 connection
-    # For now, return mock response
+    """Test MT5 connection with real MetaTrader 5 terminal"""
+    from app.services.mt5_service import mt5_service
     
-    # Simulate connection test
-    import asyncio
-    await asyncio.sleep(1)  # Simulate network delay
-    
-    return {
-        "status": "connected",
-        "message": "Successfully connected to MT5 server",
-        "account_info": {
-            "server": data.server,
-            "login": data.login,
-            "balance": 10000.00,
-            "currency": "USD"
+    # Convert login to int if it's a string
+    try:
+        login_id = int(data.login)
+    except ValueError:
+        return {
+            "status": "error",
+            "message": "Login ID must be a valid number"
         }
+    
+    # Test real connection
+    result = mt5_service.test_connection(
+        server=data.server,
+        login=login_id,
+        password=data.password
+    )
+    
+    # Build response
+    response = {
+        "status": result.status.value,
+        "message": result.message
     }
+    
+    if result.account_info:
+        response["account_info"] = {
+            "server": result.account_info.server,
+            "login": result.account_info.login,
+            "balance": result.account_info.balance,
+            "equity": result.account_info.equity,
+            "margin_free": result.account_info.margin_free,
+            "currency": result.account_info.currency,
+            "leverage": result.account_info.leverage,
+            "name": result.account_info.name,
+            "company": result.account_info.company
+        }
+    
+    if result.error_code:
+        response["error_code"] = result.error_code
+    
+    return response
 
 
 # API Key format validators

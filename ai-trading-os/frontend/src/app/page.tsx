@@ -1,27 +1,47 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Pause, Square, RotateCcw, XCircle } from 'lucide-react';
+import api, { PortfolioOverview, ExposureInfo } from '@/lib/api';
 
-// Portfolio Metrics Component
+// Portfolio Metrics Component - Real-time from MT5
 function PortfolioMetrics() {
+  const [data, setData] = useState<PortfolioOverview | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const overview = await api.getPortfolioOverview();
+        setData(overview);
+      } catch (e) {
+        console.error('Failed to fetch portfolio:', e);
+      }
+    };
+
+    fetchData();
+    const interval = setInterval(fetchData, 5000); // Refresh every 5s
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="metrics-grid">
-      <div className="metric-card negative">
+      <div className={`metric-card ${(data?.daily_pnl_percent ?? 0) < 0 ? 'negative' : ''}`}>
         <span className="metric-label">MAX DRAWDOWN</span>
-        <span className="metric-value">-3.2%</span>
-      </div>
-      <div className="metric-card">
-        <span className="metric-label">EXPOSURE</span>
-        <span className="metric-value">45.5%</span>
+        <span className="metric-value">{data ? `${data.daily_pnl_percent >= 0 ? '' : ''}${data.daily_pnl_percent}%` : '...'}</span>
       </div>
       <div className="metric-card">
         <span className="metric-label">MARGIN USED</span>
-        <span className="metric-value">$12,450</span>
+        <span className="metric-value">{data ? `$${data.margin_used.toLocaleString()}` : '...'}</span>
       </div>
       <div className="metric-card">
-        <span className="metric-label">RISK/REWARD</span>
-        <span className="metric-value">1:2.5</span>
+        <span className="metric-label">FREE MARGIN</span>
+        <span className="metric-value">{data ? `$${data.free_margin.toLocaleString()}` : '...'}</span>
+      </div>
+      <div className="metric-card">
+        <span className="metric-label">TOTAL P/L</span>
+        <span className={`metric-value ${(data?.total_pnl ?? 0) >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-critical)]'}`}>
+          {data ? `${data.total_pnl >= 0 ? '+' : ''}$${data.total_pnl.toLocaleString()}` : '...'}
+        </span>
       </div>
     </div>
   );
@@ -164,6 +184,24 @@ function ControlPanel() {
   const [aiCloudActive, setAiCloudActive] = useState(false);
   const [autoTrading, setAutoTrading] = useState(true);
   const [riskLevel, setRiskLevel] = useState<'low' | 'mid' | 'high'>('mid');
+  const [accountData, setAccountData] = useState<PortfolioOverview | null>(null);
+
+  useEffect(() => {
+    const fetchAccountData = async () => {
+      try {
+        const data = await api.getPortfolioOverview();
+        setAccountData(data);
+        setMt5Connected(data.balance > 0); // Assume connected if balance > 0
+      } catch (e) {
+        console.error('Failed to fetch account data:', e);
+        setMt5Connected(false);
+      }
+    };
+
+    fetchAccountData();
+    const interval = setInterval(fetchAccountData, 5000); // Refresh every 5s
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="control-panel">
@@ -196,26 +234,38 @@ function ControlPanel() {
         </div>
       </div>
 
-      {/* Account Stats */}
+      {/* Account Stats - Real-time from MT5 */}
       <div className="stats-section">
-        <h4 className="stats-title">Account Stats</h4>
+        <h4 className="stats-title">Account Stats {accountData ? '🟢' : '⏳'}</h4>
         <div className="stats-grid">
           <div className="stat-card">
             <span className="stat-label">BALANCE</span>
-            <span className="stat-value">$250,000</span>
+            <span className="stat-value">
+              {accountData ? `$${accountData.balance.toLocaleString()}` : '...'}
+            </span>
           </div>
           <div className="stat-card">
             <span className="stat-label">EQUITY</span>
-            <span className="stat-value highlight">$262,450</span>
-            <span className="stat-change">+$12,450</span>
+            <span className="stat-value highlight">
+              {accountData ? `$${accountData.equity.toLocaleString()}` : '...'}
+            </span>
+            {accountData && (
+              <span className={`stat-change ${accountData.total_pnl >= 0 ? '' : 'negative'}`}>
+                {accountData.total_pnl >= 0 ? '+' : ''}${accountData.total_pnl.toLocaleString()}
+              </span>
+            )}
           </div>
           <div className="stat-card">
-            <span className="stat-label">DAILY PROFIT Goal</span>
-            <span className="stat-value">2.5%</span>
+            <span className="stat-label">DAILY P/L</span>
+            <span className={`stat-value ${(accountData?.daily_pnl ?? 0) >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-critical)]'}`}>
+              {accountData ? `${accountData.daily_pnl >= 0 ? '+' : ''}$${accountData.daily_pnl.toLocaleString()}` : '...'}
+            </span>
           </div>
           <div className="stat-card">
-            <span className="stat-label">WIN RATE</span>
-            <span className="stat-value">68%</span>
+            <span className="stat-label">PROFIT %</span>
+            <span className={`stat-value ${(accountData?.daily_pnl_percent ?? 0) >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-critical)]'}`}>
+              {accountData ? `${accountData.daily_pnl_percent >= 0 ? '+' : ''}${accountData.daily_pnl_percent}%` : '...'}
+            </span>
           </div>
         </div>
       </div>
